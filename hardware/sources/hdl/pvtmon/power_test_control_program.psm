@@ -1,0 +1,2498 @@
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Copyright © 2012-2013, Xilinx, Inc.
+                              ; This file contains confidential and proprietary information of Xilinx, Inc. and is
+                              ; protected under U.S. and international copyright and other intellectual property laws.
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Disclaimer:
+                              ; This disclaimer is not a license and does not grant any rights to the materials
+                              ; distributed herewith. Except as otherwise provided in a valid license issued to
+                              ; you by Xilinx, and to the maximum extent permitted by applicable law: (1) THESE
+                              ; MATERIALS ARE MADE AVAILABLE "AS IS" AND WITH ALL FAULTS, AND XILINX HEREBY
+                              ; DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY,
+                              ; INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-INFRINGEMENT,
+                              ; OR FITNESS FOR ANY PARTICULAR PURPOSE; and (2) Xilinx shall not be liable
+                              ; (whether in contract or tort, including negligence, or under any other theory
+                              ; of liability) for any loss or damage of any kind or nature related to, arising
+                              ; under or in connection with these materials, including for any direct, or any
+                              ; indirect, special, incidental, or consequential loss or damage (including loss
+                              ; of data, profits, goodwill, or any type of loss or damage suffered as a result
+                              ; of any action brought by a third party) even if such damage or loss was
+                              ; reasonably foreseeable or Xilinx had been advised of the possibility of the same.
+                              ;
+                              ; CRITICAL APPLICATIONS
+                              ; Xilinx products are not designed or intended to be fail-safe, or for use in any
+                              ; application requiring fail-safe performance, such as life-support or safety
+                              ; devices or systems, Class III medical devices, nuclear facilities, applications
+                              ; related to the deployment of airbags, or any other applications that could lead
+                              ; to death, personal injury, or severe property or environmental damage
+                              ; (individually and collectively, "Critical Applications"). Customer assumes the
+                              ; sole risk and liability of any use of Xilinx products in Critical Applications,
+                              ; subject only to applicable laws and regulations governing limitations on product
+                              ; liability.
+                              ;
+                              ; THIS COPYRIGHT NOTICE AND DISCLAIMER MUST BE RETAINED AS PART OF THIS FILE AT ALL TIMES.
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;
+                              ;             _  ______ ____  ____  __  __  __  
+                              ;            | |/ / ___|  _ \/ ___||  \/  |/ /_ 
+                              ;            | ' / |   | |_) \___ \| |\/| | '_ \
+                              ;            | . \ |___|  __/ ___) | |  | | (_) |
+                              ;            |_|\_\____|_|   |____/|_|  |_|\___/
+                              ;                                    
+                              ;
+                              ;
+                              ; KCPSM6 reference design on KC705 Board (www.xilinx.com).
+                              ;
+                              ; Chris Kohn and Ken Chapman - Xilinx, Inc.
+                              ;
+                              ;    Version 1.0 - April 01, 2011
+                              ;    Version 1.1 - April 27, 2011
+                              ;      * include other power rails in total power
+                              ;      * fixed PMBus_read_transaction to use NACK
+                              ;    Version 1.2 - May   10, 2011
+                              ;      * added voltage bump-up function for MGT_AVCC rail to wake up GTs
+                              ;    Version 1.4 - June  16, 2011
+                              ;      * read voltage/current values for 3 additional rails associated with 
+                              ;        controller U89 and include in total power calculation
+                              ;      * use new BRAM register map
+                              ;    Version 1.5 - ???, 2011
+                              ;      * changed PCM available / PCM active address widths from 10 bits to 14 bits
+                              ;      * fix in calculate_power function (deviation <= 1mW)
+                              ;
+                              ;
+                              ; INTRODUCTION
+                              ;
+                              ; This program implements a PMBus interface to a UCD9248 Power Supply Controller (TI) and
+                              ; provides a bridge between a UART and a Block Memory (BRAM) within a device.
+                              ;
+                              ; KCPSM6 is supplied with a 50MHz clock so the code provided would need some adjustment
+                              ; if it were to be used with a different frequency.
+                              ;
+                              ; It implements a  115200 baud, 1 stop bit, no parity, no handshake UART connection
+                              ; providing simple text based commands which enable the BRAM treated as 1K words of 32-bits
+                              ; to be read from and written to.
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Port definitions
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;
+                              ;
+                              ; 10-bit address to BRAM using 2 output ports
+                              ;
+                              CONSTANT address_port0, 08                  ; address[7:0]
+                              CONSTANT address_port1, 09                  ; address[9:8]
+                              ;
+                              ; 32-bit data to be written to the BRAM using 4 output ports
+                              ;
+                              CONSTANT data_out_port0, 04
+                              CONSTANT data_out_port1, 05
+                              CONSTANT data_out_port2, 06
+                              CONSTANT data_out_port3, 07
+                              ;
+                              ; 32-bit data read back from BRAM using 4 input ports
+                              ;
+                              CONSTANT data_in_port0, 00
+                              CONSTANT data_in_port1, 01
+                              CONSTANT data_in_port2, 02
+                              CONSTANT data_in_port3, 03
+                              ;
+                              ; BRAM controls using constant optimised output port
+                              ;
+                              CONSTANT bram_control_port, 01
+                              CONSTANT bram_we, 00000001'b                ; bit0 - WE write enable
+                              CONSTANT bram_en, 00000010'b                ; bit1 - EN enable BRAM (for read)
+                              CONSTANT bram_off, 00000000'b               ; disable BRAM
+                              CONSTANT bram_read, 00000010'b              ; EN=1 with WE=0 (read)
+                              CONSTANT bram_write, 00000011'b             ; EN=1 with WE=1 (write)
+                              ;
+                              ; PMBus
+                              ;
+                              CONSTANT PMBus_input_port, 04
+                              CONSTANT PMBus_output_port, 20
+                              CONSTANT PMBus_clk, 00000001'b              ; bit0 - CLK on both ports
+                              CONSTANT PMBus_data, 00000010'b             ; bit1 - DATA on both ports
+                              CONSTANT PMBus_alert, 00000100'b            ; bit2 - ALERT on input port
+                              CONSTANT PMBus_control, 00000100'b          ; bit2 - CONTROL on output port
+                              ;
+                              ; Power Consuming Modules
+                              ;
+                              CONSTANT control_sinks_port0, 40            ;32-bit control word
+                              CONSTANT control_sinks_port1, 41
+                              CONSTANT control_sinks_port2, 42
+                              CONSTANT control_sinks_port3, 43
+                              ;
+                              CONSTANT monitor_sinks_port0, 08            ;32-bit monitor word
+                              CONSTANT monitor_sinks_port1, 09
+                              CONSTANT monitor_sinks_port2, 0A
+                              CONSTANT monitor_sinks_port3, 0B
+                              ;
+                              CONSTANT sleep_sink_port, 02                ;constant optimised output port
+                              CONSTANT sleep, 00000001'b                  ; bit0 - sleep control
+                              CONSTANT wake,  00000000'b
+                              ;
+                              ; XADC
+                              ;
+                              CONSTANT XADC_addr_port, 80               ; 7-bit DADDR [6:0]
+                              ;
+                              CONSTANT XADC_din_port0, 81               ; 16-bit DI data   [7:0]
+                              CONSTANT XADC_din_port1, 82               ;                 [15:8]
+                              ;
+                              CONSTANT XADC_read_port0, 0C              ; Captured 16-bit DO data   [7:0]
+                              CONSTANT XADC_read_port1, 0D              ;                          [15:8]
+                              ;
+                              CONSTANT XADC_status_port, 0E             ; Status signals
+                              CONSTANT XADC_TIP, 00000001'b             ;   Transaction in Progresss - bit0
+                              CONSTANT XADC_JTAGbusy, 00000010'b        ;                  JTAG Busy - bit1
+                              CONSTANT XADC_JTAGlocked, 00000100'b      ;                JTAG Locked - bit2
+                              CONSTANT XADC_JTAGmodified, 00001000'b    ;              JTAG Modified - bit3
+                              ;
+                              ; To initiate a XADC transaction a write is made to Constant Optimised Port
+                              ; 02 hex with bit0 defining the state of DWE for read (0) or write (1).
+                              ;
+                              CONSTANT XADC_operation_port, 04          ; 'dummy write' starts transaction
+                              CONSTANT XADC_Read, 00000000'b            ;   DWE = 0   read - bit0
+                              CONSTANT XADC_Write, 00000001'b           ;   DWE = 1  write - bit0
+                              ;
+                              ; Heat sink fan control
+                              ;
+                              CONSTANT fan_rpm_monitor_port, 0F
+                              CONSTANT fan_rpm_control_port, 10
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Special Register usage
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; No registers are given special names in this program.
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Scratch Pad Memory Locations
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; The start of scratch pad is used for the data transmitted or received from a device
+                              ; attached to the PMBus. Up to 32 bytes should be reserved for this purpose.
+                              ;
+                              CONSTANT PMBus_data0, 00
+                              CONSTANT PMBus_data31, 1F
+                              ;
+                              ;
+                              CONSTANT decimal0, 20                       ;5 digit decimal value
+                              CONSTANT decimal1, 21                       ;  Suitable for 16-bit values up to
+                              CONSTANT decimal2, 22                       ;   65,536
+                              CONSTANT decimal3, 23
+                              CONSTANT decimal4, 24
+                              ;
+                              ;
+                              CONSTANT device, 30                         ;store device# for PMBus transaction
+                              CONSTANT rail,   31                         ;store rail# for PMBus transaction
+                              CONSTANT reg_V,  32                         ;target register address to hold voltage
+                              CONSTANT reg_A,  33                         ;target register address to hold current
+                              CONSTANT reg_W,  34                         ;target register address to hold power
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; BRAM register map
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Misc control
+                              ;------------------------------------------------------------------------------------------ 
+                              ;
+                              ;   Hardware Design Version
+                              ;
+                              CONSTANT design_cfg,     00
+                              ;
+                              ;   Total Power
+                              ;
+                              CONSTANT total_W,        01
+                              ;
+                              ;   Die Temperature
+                              ;
+                              CONSTANT die_temp,       02
+                              ;
+                              ;   Fan Speed
+                              ;
+                              CONSTANT fan_control,    03
+                              ;
+                              ;   PCM control/monitor
+                              ;
+                              CONSTANT pcm_control,    04                              
+                              CONSTANT pcm_monitor,    05    ;deprecated
+                              ;
+                              ;   PMBus control
+                              ;
+                              CONSTANT pmbus_control,  06
+                              ;
+                              ;   registers 07-0F are reserved
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; TI controller @ addr 52
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;   PMBus - vccint
+                              ;
+                              CONSTANT 52_rail1_V,     10
+                              CONSTANT 52_rail1_A,     11
+                              CONSTANT 52_rail1_W,     12
+                              CONSTANT 52_rail1_TBD,   13    ;reserved
+                              ;
+                              ;   PMBus - vcc2v5
+                              ;
+                              CONSTANT 52_rail2_V,     14
+                              CONSTANT 52_rail2_A,     15
+                              CONSTANT 52_rail2_W,     16
+                              CONSTANT 52_rail2_TBD,   17    ;reserved
+                              ;
+                              ;   PMBus - vccaux
+                              ;
+                              CONSTANT 52_rail3_V,     18
+                              CONSTANT 52_rail3_A,     19
+                              CONSTANT 52_rail3_W,     1A
+                              CONSTANT 52_rail3_TBD,   1B    ;reserved
+                              ;
+                              ;   PMBus - unused
+                              ;
+                              CONSTANT 52_rail4_V,     1C
+                              CONSTANT 52_rail4_A,     1D
+                              CONSTANT 52_rail4_W,     1E
+                              CONSTANT 52_rail4_TBD,   1F    ;reserved
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; TI controller @ addr 53
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;   PMBus - mgt_avcc
+                              ;
+                              CONSTANT 53_rail1_V,     20
+                              CONSTANT 53_rail1_A,     21
+                              CONSTANT 53_rail1_W,     22
+                              CONSTANT 53_rail1_TBD,   23    ;reserved
+                              ;
+                              ;   PMBus - mgt_avtt
+                              ;
+                              CONSTANT 53_rail2_V,     24
+                              CONSTANT 53_rail2_A,     25
+                              CONSTANT 53_rail2_W,     26
+                              CONSTANT 53_rail2_TBD,   27    ;reserved
+                              ;
+                              ;   PMBus - vcc1v5
+                              ;
+                              CONSTANT 53_rail3_V,     28
+                              CONSTANT 53_rail3_A,     29
+                              CONSTANT 53_rail3_W,     2A
+                              CONSTANT 53_rail3_TBD,   2B    ;reserved
+                              ;
+                              ;   PMBus - vcc3v3
+                              ;
+                              CONSTANT 53_rail4_V,     2C
+                              CONSTANT 53_rail4_A,     2D    ;N/A due to missing shunt resistor
+                              CONSTANT 53_rail4_W,     2E    ;N/A due to missing shunt resistor
+                              CONSTANT 53_rail4_TBD,   2F    ;reserved
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; TI controller @ addr 54
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;   PMBus - vcc2v5
+                              ;
+                              CONSTANT 54_rail1_V,     30
+                              CONSTANT 54_rail1_A,     31
+                              CONSTANT 54_rail1_W,     32
+                              CONSTANT 54_rail1_TBD,   33    ;reserved
+                              ;
+                              ;   PMBus - vcc1v5
+                              ;
+                              CONSTANT 54_rail2_V,     34
+                              CONSTANT 54_rail2_A,     35
+                              CONSTANT 54_rail2_W,     36
+                              CONSTANT 54_rail2_TBD,   37    ;reserved
+                              ;
+                              ;   PMBus - mgt_avcc
+                              ;
+                              CONSTANT 54_rail3_V,     38
+                              CONSTANT 54_rail3_A,     39
+                              CONSTANT 54_rail3_W,     3A
+                              CONSTANT 54_rail3_TBD,   3B    ;reserved
+                              ;
+                              ;   PMBus - unconnected
+                              ;
+                              CONSTANT 54_rail4_V,     3C
+                              CONSTANT 54_rail4_A,     3D
+                              CONSTANT 54_rail4_W,     3E
+                              CONSTANT 54_rail4_TBD,   3F    ;reserved
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Other useful constants
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;
+                              ; The KC705 board is fitted with three UCD9248 Power Controllers from Texas Instruments
+                              ; and these are designated U55, U56, and U89.
+                              ;
+                              ; Device U55 is address 52 decimal (note that is decimal!).
+                              ; Device U56 is address 53 decimal (note that is decimal!).
+                              ; Device U89 is address 54 decimal (note that is decimal!).
+                              ;
+                              CONSTANT device1, 52'd
+                              CONSTANT device2, 53'd
+                              CONSTANT device3, 54'd
+                              ;
+                              CONSTANT rail1, 0'd
+                              CONSTANT rail2, 1'd
+                              CONSTANT rail3, 2'd
+                              CONSTANT rail4, 3'd
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Initialise the system
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Initialise PMBus
+                              ;       CLK = 1 (via pull-up on board)
+                              ;      DATA = 1 (via pull-up on board)
+                              ;
+                  cold_start: CALL I2C_initialise
+                              ;
+                              ; Flush out current PMBus transactionto enter known good start state
+                              ;
+                              CALL I2C_flush
+                              ;
+                              ; Initialise BRAM controls and address
+                              ;
+                              OUTPUTK bram_off, bram_control_port
+                              LOAD s0, 00
+                              OUTPUT s0, address_port0
+                              OUTPUT s0, address_port1
+                              OUTPUT s0, data_out_port0
+                              OUTPUT s0, data_out_port1
+                              OUTPUT s0, data_out_port2
+                              OUTPUT s0, data_out_port3
+                              ;
+                              ; Default state for Power Control Modules:
+                              ;
+                              ;   bit[13: 0] = 0000 hex - address of first module
+                              ;   bit[27:14] = 0000 hex - Module to assert sleep
+                              ;   bit[28] = 0           - KCPSM6 calculating/idle
+                              ;   bit[29] = 0           - LFSR on/off
+                              ;   bit[30] = 0           - Accumulator on/off
+                              ;   bit[31] = 0           - Toggle Flip-Flops on/off
+                              ;
+                              LOAD s0, 00
+                              LOAD s1, 00
+                              LOAD s2, 00
+                              LOAD s3, 00
+                              OUTPUT s0, control_sinks_port0
+                              OUTPUT s1, control_sinks_port1
+                              OUTPUT s2, control_sinks_port2
+                              OUTPUT s3, control_sinks_port3
+                              OUTPUTK sleep, sleep_sink_port
+                              ;
+                              ; Wait 100ms before generating supply 'bump' on MGT_AVCC rail
+                              ;
+                              ;CALL delay_100ms
+                              ;CALL PMBus_power_bump_up     
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Start of main measurement loop
+                              ;------------------------------------------------------------------------------------------ 
+                              ;
+                              ;
+                              ; skip reading pmbus when pmbus_control[0] is set to 1
+                              ;
+            measurement_loop: LOAD s9, 00
+                              LOAD s8, pmbus_control
+                              CALL read_word
+                              TEST sA, 00000001'b
+                              JUMP NZ, pmbus_skip
+                              ;
+                              ; update all current/voltage/power values
+                              ;
+                              CALL update_pmbus
+                              ;
+                              ; update total power value
+                              ;
+                              CALL update_total_W
+                              ;
+                              ; update PCM modules
+                              ;
+                  pmbus_skip: CALL update_PCM
+                              ;
+                              ; update die_temperature value
+                              ;
+                              CALL update_die_temp                              
+                              ;
+                              ; update fan_control value
+                              ;
+                              ;CALL update_fan_control
+                              ;
+                              ; repeat measurement loop infinitely
+                              ;
+                              JUMP measurement_loop
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Update voltage/current/power numbers for certain device and rail combinations
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; All values read via PMBus are stored in specific BRAM register locations as defined in  
+                              ; the provided board specific register map.
+                              ;
+                              ;
+                              ; update device1 values
+                              ;
+                update_pmbus: CALL update_52_rail1
+                              CALL update_52_rail2  
+                              CALL update_52_rail3
+                              CALL update_52_rail4
+                              ;
+                              ; update device2 values
+                              ;
+                              CALL update_53_rail1
+                              CALL update_53_rail2
+                              CALL update_53_rail3
+                              CALL update_53_rail4
+                              ;
+                              ; update device3 values
+                              ;
+                              CALL update_54_rail1
+                              CALL update_54_rail2
+                              CALL update_54_rail3
+                              ;
+                              RETURN
+                              ;
+                              ; update VCCINT values (device1, rail1)
+                              ;
+             update_52_rail1: LOAD s0, device1
+                              STORE s0, device
+                              LOAD s0, rail1
+                              STORE s0, rail
+                              LOAD s0, 52_rail1_V
+                              STORE s0, reg_V
+                              LOAD s0, 52_rail1_A
+                              STORE s0, reg_A
+                              LOAD s0, 52_rail1_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VCCAUX values (device1, rail2)
+                              ;
+             update_52_rail2: LOAD s0, device1
+                              STORE s0, device
+                              LOAD s0, rail2
+                              STORE s0, rail
+                              LOAD s0, 52_rail2_V
+                              STORE s0, reg_V
+                              LOAD s0, 52_rail2_A
+                              STORE s0, reg_A
+                              LOAD s0, 52_rail2_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VCC3V3 values (device1, rail3)
+                              ;
+             update_52_rail3: LOAD s0, device1
+                              STORE s0, device
+                              LOAD s0, rail3
+                              STORE s0, rail
+                              LOAD s0, 52_rail3_V
+                              STORE s0, reg_V
+                              LOAD s0, 52_rail3_A
+                              STORE s0, reg_A
+                              LOAD s0, 52_rail3_W
+                              STORE s0, reg_W
+                              ;                              
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VADJ values (device1, rail4)
+                              ;
+             update_52_rail4: LOAD s0, device1
+                              STORE s0, device
+                              LOAD s0, rail4
+                              STORE s0, rail
+                              LOAD s0, 52_rail4_V
+                              STORE s0, reg_V
+                              LOAD s0, 52_rail4_A
+                              STORE s0, reg_A
+                              LOAD s0, 52_rail4_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VCC2V5 values (device2, rail1)
+                              ;
+             update_53_rail1: LOAD s0, device2
+                              STORE s0, device
+                              LOAD s0, rail1
+                              STORE s0, rail
+                              LOAD s0, 53_rail1_V
+                              STORE s0, reg_V
+                              LOAD s0, 53_rail1_A
+                              STORE s0, reg_A
+                              LOAD s0, 53_rail1_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VCC1V5 values (device2, rail2)
+                              ;
+             update_53_rail2: LOAD s0, device2
+                              STORE s0, device
+                              LOAD s0, rail2
+                              STORE s0, rail
+                              LOAD s0, 53_rail2_V
+                              STORE s0, reg_V
+                              LOAD s0, 53_rail2_A
+                              STORE s0, reg_A
+                              LOAD s0, 53_rail2_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update MGT_AVCC values (device2, rail3)
+                              ;
+             update_53_rail3: LOAD s0, device2
+                              STORE s0, device
+                              LOAD s0, rail3
+                              STORE s0, rail
+                              LOAD s0, 53_rail3_V
+                              STORE s0, reg_V
+                              LOAD s0, 53_rail3_A
+                              STORE s0, reg_A
+                              LOAD s0, 53_rail3_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update MGT_AVTT values (device2, rail4)
+                              ;
+             update_53_rail4: LOAD s0, device2
+                              STORE s0, device
+                              LOAD s0, rail4
+                              STORE s0, rail
+                              LOAD s0, 53_rail4_V
+                              STORE s0, reg_V
+                              LOAD s0, 53_rail4_A
+                              STORE s0, reg_A
+                              LOAD s0, 53_rail4_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VCCAUX_IO values (device3, rail1)
+                              ;
+             update_54_rail1: LOAD s0, device3
+                              STORE s0, device
+                              LOAD s0, rail1
+                              STORE s0, rail
+                              LOAD s0, 54_rail1_V
+                              STORE s0, reg_V
+                              LOAD s0, 54_rail1_A
+                              STORE s0, reg_A
+                              LOAD s0, 54_rail1_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update VCCBRAM values (device3, rail2)
+                              ;
+             update_54_rail2: LOAD s0, device3
+                              STORE s0, device
+                              LOAD s0, rail2
+                              STORE s0, rail
+                              LOAD s0, 54_rail2_V
+                              STORE s0, reg_V
+                              LOAD s0, 54_rail2_A
+                              STORE s0, reg_A
+                              LOAD s0, 54_rail2_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ; update MGT_VCCAUX values (device3, rail3)
+                              ;
+             update_54_rail3: LOAD s0, device3
+                              STORE s0, device
+                              LOAD s0, rail3
+                              STORE s0, rail
+                              LOAD s0, 54_rail3_V
+                              STORE s0, reg_V
+                              LOAD s0, 54_rail3_A
+                              STORE s0, reg_A
+                              LOAD s0, 54_rail3_W
+                              STORE s0, reg_W
+                              ;
+                              CALL update_rail_V
+                              CALL update_rail_A
+                              CALL update_rail_W
+                              ;
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Read/Write Fan speed (rpm) and update BRAM
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Read requested fan speed [rps] (8-bit value) from BRAM [23:16] (32-bit rregister).
+                              ; Monitor fan speed [rps] (8-bit value), convert to [rpm] (16-bit value), and 
+                              ; write to BRAM [15:0] (32-bit registers)
+                              ;
+                              ; 10-bit address stored in [s9,s8]
+                              ;  8-bit requested fan speed [rps] stored in sB
+                              ;  8-bit observed fan speed [rps] stored in sA
+                              ;
+          update_fan_control: LOAD s9, 00
+                              LOAD s8, fan_control                           ;[s8,s9]= BRAM address
+                              LOAD sD, 00
+                              LOAD sC, 00
+                              CALL read_word                              
+                              OUTPUT sB, fan_rpm_control_port             ;sB= requested fan speed [rps]
+                              INPUT sA, fan_rpm_monitor_port              ;sA= observed fan speed [rps]                          
+                              CALL write_word                             ;write BRAM
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Read Die Temperature from XADC and update BRAM
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ;
+                              ; Calibration of the ADC within XADC
+                              ;
+             update_die_temp: CALL ADC_Calibration
+                              ;
+                              ; Set continuous sampling of die temperature (channel 0)
+                              ;
+                              CALL select_TEMP
+                              ;
+                              ; Read and display value formatted appropreately
+                              ;
+                              CALL TEMP_sample
+                              ;
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; KC705 Power Analysis
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; This routine collects the voltage and current measurements for each power rail
+                              ; associated with the Kintex-7 device and then displays these values along with
+                              ; a calculation of the power dissipated in the device.
+                              ;
+                              ;
+                              ; Device U55 has been allocated address 52 decimal (note that is decimal!).
+                              ;
+                              ;      Page    Rail    Purpose on KC705 Board
+                              ;       00       1        1.0v VCCint supply to Kintex-7
+                              ;       01       2        1.8v VCCaux supply to Kintex-7
+                              ;       02       3        3.3v VCC3v3 supply to board peripherals
+                              ;       03       4        1.8v-3.3v Vadj supply to Kintex7 (2.5v default)
+                              ;
+                              ; Device U56 has been allocated address 53 decimal.
+                              ;
+                              ;      Page    Rail    Purpose on KC705 Board
+                              ;       00       1        2.5v VCC2v5 supply to Kintex-7
+                              ;       01       2        1.5v VCC1v5 supply to Kintex-7
+                              ;       02       3        1.0v MGT_AVCC supply to Kintex-7
+                              ;       03       4        1.2v MGT_AVTT supply to Kintex-7                              
+                              ;
+                              ; Device U89 has been allocated address 54 decimal.
+                              ;
+                              ;      Page    Rail    Purpose on KC705 Board
+                              ;       00       1        1.8v VCCAUX_IO supply to Kintex-7
+                              ;       01       2        1.0v VCCBRAM supply to Kintex-7
+                              ;       02       3        1.8v MGT_VCCAUX supply to Kintex-7
+                              ;       03       4        unused 
+                              ;
+                              ;
+               update_rail_V: FETCH sA, device                            ;load device#
+                              FETCH s0, rail                              ;load rail#
+                              STORE s0, 00
+                              CALL PMBus_PAGE_write                       ;select page
+                              ;
+                              FETCH sA, device                            ;load device#
+                              CALL PMBus_READ_VOUT_read                   ;read rail voltage
+                              FETCH s4, 00                                ;[s5,s4] = READ_VOUT value
+                              FETCH s5, 01
+                              LOAD s7, 3E                                 ;scale to mV
+                              LOAD s6, 80
+                              CALL mult_16x16                             ;[s3,s2] = mV value
+                              LOAD s9, 00                                 ;[s9,s8] = BRAM register address
+                              FETCH s8, reg_V
+                              LOAD sD, 00                                 ;[sD,sC,sB,sA] = BRAM data
+                              LOAD sC, 00
+                              LOAD sB, s3
+                              LOAD sA, s2
+                              CALL write_word                             ;write to BRAM
+                              RETURN
+                              ;
+               update_rail_A: FETCH sA, device                            ;load device#
+                              FETCH s0, rail                              ;load rail#
+                              STORE s0, 00
+                              CALL PMBus_PAGE_write                       ;select page
+                              ;
+                              FETCH sA, device                             ;load device#
+                              CALL PMBus_READ_IOUT_read                   ;read rail current
+                              FETCH s4, 00                                ;[s5,s4] = LINEAR 11 format
+                              FETCH s5, 01
+                              CALL LINEAR11_to_5b11                       ;[s5,s4] = <5.11> format
+                              LOAD s7, 7D                                 ;scale to mA
+                              LOAD s6, 00
+                              CALL mult_16x16                             ;[s3,s2] = mA value
+                              LOAD s9, 00                                 ;[s9,s8] = BRAM register address
+                              FETCH s8, reg_A
+                              LOAD sD, 00                                 ;[sD,sC,sB,sA] = BRAM data
+                              LOAD sC, 00
+                              LOAD sB, s3
+                              LOAD sA, s2
+                              CALL write_word                             ;write to BRAM
+                              RETURN
+                              ;
+               update_rail_W: FETCH sD, reg_V                             ;Pointer to Voltage
+                              FETCH sE, reg_A                             ;Pointer to Current
+                              FETCH sF, reg_W                             ;Pointer to Wattage for result
+                              CALL calculate_power
+                              RETURN
+                              ;
+                              ; update total power
+                              ;
+              update_total_W: LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 52_rail1_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s3, sB                           ;[s3,s2]= hex value vccint wattage
+                              LOAD s2, sA
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 52_rail2_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value vccaux wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 52_rail4_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value vadj wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 53_rail1_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value vcc2v5 wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 53_rail2_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value vcc1v5 wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1                     
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 53_rail3_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value mgt_avcc wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 53_rail4_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value mgt_avtt wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 54_rail1_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value vcc2v5 wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 54_rail2_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value vcc1v5 wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1                     
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, 54_rail3_W
+                              CALL read_word                        ;read from BRAM into [sD,sC,sB,sA]
+                              LOAD s1, sB                           ;[s1,s0]= hex value mgt_avcc wattage
+                              LOAD s0, sA
+                              ;
+                              ADD s2, s0                            ;[s3,s2]= total power
+                              ADDCY s3, s1
+                              ;
+                              LOAD s9, 00                           ;copy address into [s9, s8]
+                              LOAD s8, total_W
+                              LOAD sD, 00
+                              LOAD sC, 00
+                              LOAD sB, s3
+                              LOAD sA, s2
+                              CALL write_word                       ;write to BRAM
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Power Calculation
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Power is simply the product of voltage x current.
+                              ;
+                              ; Both voltage and current are represented by 16-bit integers expressing mV and mA which
+                              ; means that direct multiplication will yield a 32-bit value expressed in uW. The aim is
+                              ; to display power in Watts with a resolution that is again at the mW level so then product
+                              ; needs to be scaled by a factor of 1/1000 before conversion to BCD and display.
+                              ;
+                              ; 1.000v x 1.000A = 1.000W
+                              ;
+                              ;     1000 mv              03E8 hex
+                              ;   x 1000 mA            x 03E8 hex
+                              ;  ----------        -------------
+                              ;  1000000 uW          000F4240 hex
+                              ;
+                              ;
+                              ;
+                              ;  1000000 uW          000F4240 hex
+                              ;  x     0.001           x 4189 hex
+                              ;  -----------     ----------------
+                              ;     1000 mW      0003E7FCB440 hex   Discard lower 3 bytes and get 0003E7
+                              ;                                     which is 999mW and accurate enough.
+                              ;
+                              ; The most significant byte can also be discarded as the 16-bits already represent
+                              ; power up to 65.535 Watts!
+                              ;
+                              ;
+                              ; This routine processes data stored in BRAM. Each 16-bit value must be stored 
+                              ; least significant byte first and its location identified with a register...
+                              ;
+                              ;     sD - Pointer to Voltage BRAM address
+                              ;     sE - Pointer to Current BRAM address
+                              ;     sF - Pointer to Wattage BRAM address
+                              ;
+             calculate_power: LOAD s9, 00                                 ;[s9,s8]= BRAM address voltage
+                              LOAD s8, sD
+                              CALL read_word                              ;read BRAM
+                              LOAD s5, sB                                 ;[s5,s4]= voltage
+                              LOAD s4, sA
+                              ;
+                              LOAD s9, 00                                 ;[s9,s8]= BRAM address current
+                              LOAD s8, sE
+                              CALL read_word                              ;read BRAM
+                              LOAD s7, sB                                 ;[s7,s6]= current
+                              LOAD s6, sA
+                              ;
+                              CALL mult_16x16                             ;[s3,s2,s1,s0]=[s5,s4]x[s7,s6]
+                              ;
+                              ; 32-bit x 16-bit multiplication
+                              ;    This can be optimised to reuse the 16x16 multiplication routine
+                              ;    as well as only compute the part of the result that is required.
+                              ;
+                              ;                aaaabbbb
+                              ;                  x cccc
+                              ;                --------
+                              ;                BBBBBBBB    <- bbbb x cccc
+                              ;        +   AAAAAAAA0000    <- aaaa x cccc
+                              ;            ------------
+                              ;            yyYYYYyyyyyy    <- 48-bit result with 'YYYY' being useful
+                              ;
+                              ;    The lower two bytes of 'BBBBBBBB' and the most significant byte of
+                              ;    'AAAAAAAA' do not contribute to 'YYYY' which is used.
+                              ;
+                              LOAD sE, s3                                 ;preserve 'aaaa' in [sE,sD]
+                              LOAD sD, s2
+                              LOAD s5, 41                                 ;[s5,s4] = 'cccc' = 4189 hex
+                              LOAD s4, 89
+                              LOAD s7, s1                                 ;[s7,s6] = 'bbbb'
+                              LOAD s6, s0
+                              CALL mult_16x16                             ;[s3,s2,s1,s0]= 'BBBBBBBB'
+                              ;retain upper 2 bytes of 'B'
+                              LOAD sA, 00                                 ;[sA,s9,s8]= 00BBBB ready for addition
+                              LOAD s9, s3
+                              LOAD s8, s2
+                              LOAD s7, sE                                 ;[s7,s6] = 'aaaa'
+                              LOAD s6, sD
+                              CALL mult_16x16                             ;[s3,s2,s1,s0]= 'AAAAAAAA'
+                              ;add lower 3-bytes of 'A' to form result
+                              ADD s8, s0                                  ;00BBBB + AAAAAA
+                              ADDCY s9, s1                                ;[sA,s9]= 'YYYY'
+                              ADDCY sA, s2
+                              ;
+                              LOAD sD, 00                                 ;[sD,sC,sB,sA]= BRAM data wattage
+                              LOAD sC, 00
+                              LOAD sB, sA
+                              LOAD sA, s9
+                              LOAD s9, 00                                 ;[s9,s8]= BRAM address wattage
+                              LOAD s8, sF
+                              CALL write_word                             ;write BRAM
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Power bump up on MGT_AVCC rail
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Controls U56 page 02 (rail 3) such that the output is told to increase to
+                              ; 1.4v for 5ms and then told to go back to 1.0v.
+                              ;
+                              ; This is performed by direct specification of the nominal output level
+                              ; by writing to the VOUT_COMMAND register.
+                              ;
+                              ; The sequenced is as follows...
+                              ;
+                              ;      VOUT_COMMAND = 1662 - 1.4v
+                              ;      Wait 5ms
+                              ;      VOUT_COMMAND = 1000 - 1.0v
+                              ;
+                              ; Whilst the delay effectively defines the duration of the high level operation
+                              ; the will also be some time associated with the PMBus Transaction (~800us) and
+                              ; the actual rise and fall times of the supply rail.
+                              ;
+         PMBus_power_bump_up: LOAD sA, device2                            ;Device U56
+                              LOAD s0, rail3                              ;select rail 3
+                              STORE s0, 00
+                              CALL PMBus_PAGE_write                       ;Write page number to device
+                              ;
+                              LOAD sA, device2                            ;Device U56
+                              LOAD s0, 16                                 ;set value to 1662 hex
+                              STORE s0, 01
+                              LOAD s0, 62
+                              STORE s0, 00                              
+                              CALL PMBus_VOUT_COMMAND_write               ;Write VOUT_COMMAND to device
+                              ;
+                              CALL delay_5ms                              ;duration of pulse
+                              ;
+                              LOAD sA, device2                            ;Device U56
+                              LOAD s0, 10                                 ;set value to 1000 hex
+                              STORE s0, 01
+                              LOAD s0, 00
+                              STORE s0, 00                              
+                              CALL PMBus_VOUT_COMMAND_write               ;Write VOUT_COMMAND to device
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Texas Instruments UCD9248 Power Controllers
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Communication with the UCD9248 power controller device is performed using the PMBus
+                              ; standard which is based on a I2C physical interface. KCPSM6 is used to implement both
+                              ; the I2C communication and the an adequate subset of the PMBus commands in order to
+                              ; monitor the two UCD9248 controllers on the KC705 board.
+                              ;
+                              ; Further detailed descriptions are provided before each of the routines associated with
+                              ; each of the PMBus commands that is used (or may be used in the future). The descriptions
+                              ; often contain details that have only been discovered or understood through practical
+                              ; experimentation during the development of this KCPSM6 program. Whilst these points
+                              ; supplement the official documentation provided by Texas Instruments it may be very
+                              ; specific to the UCD9248 device rather than generic PMBus. As a result, it may also be
+                              ; that the implementation is also specific to the UCD9248 device and therefore require
+                              ; further refinement or adjustments if reused with different PMBus devices.
+                              ;
+                              ;
+                              ; DEVICE_ID command (FD hex)
+                              ; --------------------------
+                              ;
+                              ; This is a manufacturer specific command which in the case of the UCD9248 is used to
+                              ; read a text string identify the device type and version. As such it provides a
+                              ; useful way to confirm communication is possible with each controller on the board.
+                              ;
+                              ; The command requires that 32 bytes are read and the following response was observed....
+                              ;   1E hex - Record Space Indicator
+                              ;   UCD9248-80|3.24.0.8163|080915   (29 character string where vertical bar is 7C hex)
+                              ;      Decode...
+                              ;                UCD9248-80      - Device type and pins on package
+                              ;                3.24.0.8163     - Firmware version
+                              ;                080915          - Firmware compile date YYMMDD
+                              ;   00 hex - NULL character
+                              ;   F6 hex - PEC byte (Packet Error Checking)
+                              ;
+                              ; Note - The 'UCD92xx_PMBus_Command_Reference.pdf' does not document this command
+                              ;        with adequate details for reliable operation so the details above were
+                              ;        only obtained through experimentation.
+                              ;           The 1E hex and 00 hex bytes were not documented.
+                              ;           The fact that there are 31 data bytes followed by PEC was not clear.
+                              ;        The reason this is important is that the PEC byte is based on the exact number
+                              ;        of bytes contained in the transaction. If you do not read all bytes including
+                              ;        the PEC then the controller does not terminate the transaction internally and
+                              ;        will then fail to respond to the next transaction.
+                              ;
+                              ;        Experiments also revealed that early termination of a transaction is possible
+                              ;        providing that a 'no acknowledge' (NACK) is issued before the stop (P).
+                              ;        However this means that PEC cannot be used to confirm a transaction as valid
+                              ;        so it not the desirable technique.
+                              ;
+                              ;
+                              ; The following routine requires the 7-bit address of the target device to be
+                              ; defined in register 'sA'. It will then read the attempt to read the device ID
+                              ; from that target and output the main text string to the UART if it is successful.
+                              ; If communication is not possible then an error message is sent to the UART.
+                              ;
+        PMBus_DEVICE_ID_read: LOAD sC, FD                                 ;DEVICE_ID command
+                              LOAD sB, 31'd                               ;31 bytes of data to read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              CALL NZ, send_ID_fail                       ;PEC check
+                              ;
+                send_ID_fail: JUMP send_ID_fail 
+                              ;
+                              ;
+                              ; PAGE command (00 hex)
+                              ; ---------------------
+                              ;
+                              ; As described previously each UCD9248 device has the ability to control 4 power rails
+                              ; and each has an associated 'page' of parameters. Before any parameters can be read
+                              ; or modified the desired page must be selected by writing the page number using the
+                              ; page command. To confirm the selection of a page or establish which page is currently
+                              ; selected the page command can also be used to read the current page number.
+                              ;
+                              ; The following routines require the 7-bit address of the target device to be
+                              ; defined in register 'sA'. Scratch pad memory location 00 will define the page number.
+                              ; This location must be set appropriately before calling the PMBus_PAGE_write routine
+                              ; and it will be updated to reflect the current page number when calling the
+                              ; PMBus_PAGE_read routine.
+                              ;
+                              ;
+             PMBus_PAGE_read: LOAD sC, 00                                 ;PAGE command
+                              LOAD sB, 1'd                                ;1 byte of data to read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+            PMBus_PAGE_write: LOAD sC, 00                                 ;PAGE command
+                              LOAD sB, 1'd                                ;1 byte of data to write
+                              CALL PMBus_write_transaction                ;Read transaction (address in 'sA')
+                              RETURN
+                              ;
+                              ;
+                              ; PHASE command (04 hex)
+                              ; ----------------------
+                              ;
+                              ; This reads or writes the PHASE control byte for the selected rail (PAGE).
+                              ; The byte value selects
+                              ;
+                              ;      00 - Phase A of rail
+                              ;      01 - Phase B of rail
+                              ;      FF - Both phases of rail
+                              ;
+                              ; On the ML605 board each rail is only using one phase so this is not normally used.
+                              ; However, on some boards both phases are used to supply adequate current for a supply
+                              ; rail. Then when reading READ_IOUT you can either read the current supplied by each
+                              ; phase, or more likely, want to read the total current. Hence the desire to set PHASE
+                              ; to FF hex. But it should be noted that setting PHASE to FF hex then prevents the
+                              ; correct setting and reading of the other rail parameters such as IOUT_CAL_GAIN so
+                              ; care is required in its use depending on what you will be doing next.
+                              ;
+                              ; The following routines require the 7-bit address of the target device to be
+                              ; defined in register 'sA' and the desired page to be selected. The value of
+                              ; PHASE will be read from the device and stored in the following scratch
+                              ; pad memory location during or read or the desired value must be placed in this
+                              ; location before writing to the device.
+                              ;     Scratch pad location 00 = PHASE byte value (e.g. FF)
+                              ;
+                              ;
+            PMBus_PHASE_read: LOAD sC, 04                              ;PHASE command
+                              LOAD sB, 1'd                             ;1 byte of data to be read
+                              CALL PMBus_read_transaction              ;Read transaction (address in 'sA')
+                              RETURN                                   ;Z flag = Z confirms operation if required
+                              ;
+           PMBus_PHASE_write: LOAD sC, 04                              ;PHASE command
+                              LOAD sB, 1'd                             ;1 byte of data to be written
+                              CALL PMBus_write_transaction             ;Write transaction (address in 'sA')
+                              ;
+                              ;
+                              ; VOUT_MODE command (20 hex)
+                              ; --------------------------
+                              ;
+                              ; Reads the format in which the UCD9248 interprets and reports voltage values.
+                              ; In the case of the UCD9248 the format is fixed to LINEAR 16-bit mode with an exponent
+                              ; value of -12. This means that the expected response when reading of VOUT_MODE is
+                              ;   14 hex = 000 10100
+                              ;     where
+                              ;       000 is the code for linear mode
+                              ;
+                              ; Because the format is fixed in the UCD9248 device then this command does not really
+                              ; need to be used and all voltages can be treated as 16-bit fixed point values with the
+                              ; format <4.12>
+                              ;
+                              ;       e.g. 2.5v  would be 0010.100000000000 = 2800 hex
+                              ;
+                              ; Note that voltage values are communicated least significant byte first.
+                              ;
+                              ; The following routine requires the 7-bit address of the target device to be
+                              ; defined in register 'sA'. Following execution of this routine scratch pad memory
+                              ; location 00 will contain the mode value which in this case is expected to be 14 hex.
+                              ;
+                              ;
+        PMBus_VOUT_MODE_read: LOAD sC, 20                                 ;VOUT_MODE command
+                              LOAD sB, 1'd                                ;1 byte of data to read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+                              ; VOUT_COMMAND command (21 hex)
+                              ; -----------------------------
+                              ;
+    PMBus_VOUT_COMMAND_write: LOAD sC, 21                                 ;VOUT_COMMAND command
+                              LOAD sB, 2'd                                ;2 bytes of data to be written
+                              CALL PMBus_write_transaction                ;Write transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+                              ;
+                              ; READ_VOUT command (8B hex)
+                              ; --------------------------
+                              ;
+                              ; Reads the actual output voltage associated with the power rail of the currently
+                              ; selected page. As described in 'VOUT_MODE' above the format used by the UCD9248
+                              ; controller is fixed to LINEAR 16-bit mode requiring 2 bytes to be read (least
+                              ; significant byte first). The value can then be treated as 16-bit fixed point
+                              ; with the format <4.12>
+                              ;
+                              ;       e.g. 2.5v  would be 0010.100000000000 = 2800 hex
+                              ;
+                              ; The following routine requires the 7-bit address of the target device to be
+                              ; defined in register 'sA' and the desired page to have been previously selected.
+                              ; Following execution of this routine
+                              ;     Scratch pad location 00 = Least significant byte (e.g. 00 hex)
+                              ;     Scratch pad location 01 = Most significant byte (e.g. 28 hex)
+                              ;
+        PMBus_READ_VOUT_read: LOAD sC, 8B                                 ;READ_VOUT command
+                              LOAD sB, 2'd                                ;2 bytes of data to be read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+                              ; IOUT_CAL_GAIN command (38 hex)
+                              ; ------------------------------
+                              ;
+                              ; The actual output current supplied on each rail can be read using the READ_IOUT
+                              ; command with the desired 'page' selected. However the value which is read is
+                              ; really a measurement of an amplified voltage developed across a shunt resistor.
+                              ; Because that voltage depends as much on the value of the shunt resistor and
+                              ; amplification factor as the actual current there has to be some form of scaling
+                              ; applied to convert the voltage into a true representation of the current. The
+                              ; PMBus specification (and hence the UCD9248 controller) implement this scaling
+                              ; such that....
+                              ;
+                              ;     READ_IOUT = ( Vmeasured / IOUT_CAL_GAIN ) + IOUT_CAL_OFFSET
+                              ;
+                              ; The UCD9248 controller has separate IOUT_CAL_GAIN and IOUT_CAL_OFFSET values for
+                              ; each page so it is absolutely critical that each pair of values are set to reflect
+                              ; the current sensing circuit used with each rail.
+                              ;
+                              ; On the KC705 board all power rails include a 5mOhm shunt and the voltage developed across
+                              ; that shunt is multiplied by 24.7 before it applied to the UCD9248 controller.
+                              ; the value of IOUT_CAL_GAIN reflects this. There is no need to apply any offset
+                              ; so IOUT_CAL_OFFSET should be zero for all rails.
+                              ;
+                              ; IOUT_CAL_OFFSET is covered in more detail in the next section but you should understand
+                              ; the rest this section first because it explains the number format.
+                              ;
+                              ; IOUT_CAL_GAIN represents the scaling factor in mV per Amp-mOhm so on the KC705 we need
+                              ; to be able to represent....
+                              ;     5mOhm shunt and amplification of 24.7  ----> 123.5mV per Amp
+                              ;
+                              ; The value of IOUT_CAL_GAIN is represented in a what is called the LINEAR 11 format
+                              ; which is a floating point scheme using 16-bits (2-bytes).
+                              ;
+                              ;      eeeee mmmmmmmmmmm            value = m x 2^e
+                              ;
+                              ;            eeeee - 5-bit exponent in twos complement (-16 to +15)
+                              ;      mmmmmmmmmmm - 11-bit mantissa in twos complement (-1024 to +1023)
+                              ;
+                              ; Therefore to represent a value of 123.5 we should scale the value to an integer
+                              ; that can be represented by the 11-bit mantissa and note the scaling (shifts)
+                              ; required....
+                              ;
+                              ; 123.5mV per Amp.....
+                              ;
+                              ;    123.5 decimal = 1111011.1 binary
+                              ;             m = 00011110111  with e = 11111 (-1)
+                              ;                IOUT_CAL_GAIN = 11111 00011110111 = F8F7
+                              ;
+                              ; But being floating point there can be more than one valid representation of this
+                              ; value depending on how much you shift the mantissa....
+                              ;             m = 00111101110  with e = 11110 (-2)
+                              ;                IOUT_CAL_GAIN = 11110 00111101110 = F1EE
+                              ;             m = 01111011100  with e = 11101 (-3)
+                              ;                IOUT_CAL_GAIN = 1110 1011 1101 1100 = EBDC
+                              ;
+                              ; In most floating point schemes the mantissa is normalised in such a way that as
+                              ; many of the mantissa bits are used to increase resolution as possible. As such,
+                              ; you would normally expect the mantissa value to be as large as possible and then
+                              ; the exponent used to scale that value. For example, even the value of 1 would
+                              ; probably be expressed as 10111 01000000000 = (+512) x 2^(-9)
+                              ;
+                              ; During production of the KC705 boards both UCD9248 controllers will probably have been
+                              ; programmed with the required values but since it is critical to the measurement of
+                              ; current the values should be verified and modified if necessary. However it appears
+                              ; that Texas Instruments provided slightly different values so these will also be
+                              ; treated as being correct!
+                              ;
+                              ;    U55 Page 0 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 1 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 2 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 3 - IOUT_CAL_GAIN = EBDC
+                              ;
+                              ;    U56 Page 0 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 1 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 2 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 3 - IOUT_CAL_GAIN = EBDC
+                              ;
+                              ;    U89 Page 0 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 1 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 2 - IOUT_CAL_GAIN = EBDC
+                              ;        Page 3 - IOUT_CAL_GAIN = EBDC
+                              ;
+                              ;
+                              ; The following routines require the 7-bit address of the target device to be
+                              ; defined in register 'sA' and the desired page to be selected. The value of
+                              ; IOUT_CAL_GAIN will be read from the device and stored in the following scratch
+                              ; pad memory locations during or read or the desired value must be placed in these
+                              ; locations before writing them to the device.
+                              ;     Scratch pad location 00 = Least significant byte (e.g. DC)
+                              ;     Scratch pad location 01 = Most significant byte (e.g. EB)
+                              ;
+                              ;
+    PMBus_IOUT_CAL_GAIN_read: LOAD sC, 38                                 ;IOUT_CAL_GAIN command
+                              LOAD sB, 2'd                                ;2 bytes of data to be read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+   PMBus_IOUT_CAL_GAIN_write: LOAD sC, 38                                 ;IOUT_CAL_GAIN command
+                              LOAD sB, 2'd                                ;2 bytes of data to be written
+                              CALL PMBus_write_transaction                ;Write transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+                              ; IOUT_CAL_OFFSET command (39 hex)
+                              ; --------------------------------
+                              ;
+                              ; Please see description of IOUT_CAL_GAIN above to begin with at it explains the
+                              ; format of this value and describes the current sensing circuits on the KC705
+                              ; board.
+                              ;
+                              ; IOUT_CAL_OFFSET is the offset current (Amps) which is used to adjust the READ_IOUT
+                              ; value. It is also represented by the LINEAR 11 format.
+                              ;
+                              ; An IOUT_CAL_OFFSET = 0 value is easy to represent. In theory any value of exponent
+                              ; could be used since the mantissa is zero.
+                              ;
+                              ;      IOUT_CAL_OFFSET = 00000 00000000000 = 0000 hex
+                              ;
+                              ;
+                              ; During production of the KC705 boards both UCD9248 controllers will probably have been
+                              ; programmed with the required values but since it is critical to the measurement of
+                              ; current the values should be verified and modified if necessary. However it appears
+                              ; that Texas Instruments provided slightly different values so these will also be
+                              ; treated as being correct!
+                              ;
+                              ;    U55 Page 0 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 1 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 2 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 3 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;
+                              ;    U56 Page 0 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 1 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 2 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 3 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;
+                              ;    U89 Page 0 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 1 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 2 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;        Page 3 - IOUT_CAL_OFFSET = 0000  (8000 used by TI but still zero)
+                              ;
+                              ;
+                              ; The following routines require the 7-bit address of the target device to be
+                              ; defined in register 'sA' and the desired page to be selected. The value of
+                              ; IOUT_CAL_OFFFSET will be read from the device and stored in the following scratch
+                              ; pad memory locations during or read or the desired value must be placed in these
+                              ; locations before writing them to the device.
+                              ;     Scratch pad location 00 = Least significant byte (e.g. 00)
+                              ;     Scratch pad location 01 = Most significant byte (e.g. 80)
+                              ;
+                              ;
+  PMBus_IOUT_CAL_OFFSET_read: LOAD sC, 39                                 ;IOUT_CAL_OFFSET command
+                              LOAD sB, 2'd                                ;2 bytes of data to be read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+ PMBus_IOUT_CAL_OFFSET_write: LOAD sC, 39                                 ;IOUT_CAL_OFFSET command
+                              LOAD sB, 2'd                                ;2 bytes of data to be written
+                              CALL PMBus_write_transaction                ;Write transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+                              ; READ_IOUT command (8C hex)
+                              ; ------------------------------
+                              ;
+                              ; The actual output current supplied on each rail can be read using the READ_IOUT
+                              ; command with the desired 'page' selected. The value read is an interpretation
+                              ; of the voltage developed across a shunt resistor and the application of the
+                              ; following formula...
+                              ;
+                              ;     READ_IOUT = ( Vmeasured / IOUT_CAL_GAIN ) + IOUT_CAL_OFFSET
+                              ;
+                              ; Therefore the IOUT_CAL_GAIN and IOUT_CAL_OFFSET values for each page must have been
+                              ; set appropriately to represent the current sensing circuit used with each rail.
+                              ; Please see the IOUT_CAL_GAIN and IOUT_CAL_OFFSET sections for more details.
+                              ;
+                              ; The value of READ_IOUT is represented in a what is called the LINEAR 11 format
+                              ; which is a floating point scheme using 16-bits (2-bytes).
+                              ;
+                              ;      eeeee mmmmmmmmmmm            value = m x 2^e
+                              ;
+                              ;            eeeee - 5-bit exponent in twos complement (-16 to +15)
+                              ;      mmmmmmmmmmm - 11-bit mantissa in twos complement (-1024 to +1023)
+                              ;
+                              ; Therefore it will be necessary to interpret this format allowing for any exponent.
+                              ; In theory the largest value could be 1023 x 2^15 = but 33.5 mega-Amps is hardly
+                              ; realistic! The supplies on the KC705 board are rated at 6, 10 and 20 Amps which
+                              ; gives a realistic range to expect but it should be remembered that the LINEAR 11
+                              ; format could represent such values in a variety of ways (powers of 2).
+                              ;
+                              ;
+                              ; The following routine requires the 7-bit address of the target device to be
+                              ; defined in register 'sA' and the desired page to be selected. The value of
+                              ; READ_IOUT will be read from the device and stored in the following scratch
+                              ; pad memory locations.
+                              ;     Scratch pad location 00 = Least significant byte (mmmmmmmm)
+                              ;     Scratch pad location 01 = Most significant byte (eeeeemmm)
+                              ;
+                              ;
+        PMBus_READ_IOUT_read: LOAD sC, 8C                                 ;READ_IOUT command
+                              LOAD sB, 2'd                                ;2 bytes of data to be read
+                              CALL PMBus_read_transaction                 ;Read transaction (address in 'sA')
+                              RETURN                                      ;Z flag = Z confirms operation if required
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; PMBus Read Transaction
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; This routine will perform a complete transaction on the PMBus that will read information
+                              ; from the identified slave and store it in scratch pad memory (SPM).
+                              ;
+                              ; When calling this routine....
+                              ;
+                              ;    sC - Must specify the command code for the transaction.
+                              ;
+                              ;    sA - Must provide the 7-bit address of the target device in range 00 to 7F hex.
+                              ;
+                              ;    sB - Should specify the number of data bytes to be read from the target device
+                              ;         (this should be the number expected in response to the command).
+                              ;
+                              ; On completion....
+                              ;
+                              ;    Scratch pad memory will contain the received bytes starting at location 00.
+                              ;    The last occupied location will be the value specified in register 'sB' and
+                              ;    will contain the PEC (Packet Error Checking) byte value also received from the
+                              ;    target device.
+                              ;
+                              ;    sE - Will contain the computed PEC value for the transaction.
+                              ;
+                              ;    Zero Flag - Check of PEC for transaction with 'Z' meaning valid operation.
+                              ;
+                              ; Note
+                              ;    This routine currently makes the assumption that communication with the
+                              ;    target device does occur and that all acknowledge bits (ACK) are valid.
+                              ;    In theory the PEC value is unlikely to match if communication did not
+                              ;    take place correctly so the lower level checking of ACK should not be so
+                              ;    critical in this application.
+                              ;
+                              ; Example
+                              ;
+                              ;    READ_VOUT command is 20 Hex so 'sC' should be set to 20 hex.
+                              ;    Target device has address 52 decimal so 'sA' should be set to 52'd or 68 hex.
+                              ;    The READ_VOUT command should return a 2 byte value so 'sB' should be set to 2'd.
+                              ;
+                              ;    After calling this routine
+                              ;       SPM location 00 = first (lower) data byte
+                              ;       SPM location 01 = second (upper) data byte
+                              ;       SPM location 02 = PEC received from target device.
+                              ;       sE = computed PEC for the transaction.
+                              ;       Z flag = Z providing the values of computed PEC (sE) and
+                              ;                  received PEC (SPM location 02) match.
+                              ;
+                              ; Format of a PMBus Read Transaction.....
+                              ;
+                              ;   Bus Start (S).
+                              ;   Transmit target address with write.
+                              ;     7-bit address is transmitted MSB first followed by '0' for write.
+                              ;   Receive acknowledgement from target device (ACK)
+                              ;   Transmit command byte.
+                              ;   Receive acknowledgement from target device (ACK)
+                              ;   Bus re-start (Sr).
+                              ;   Transmit target address with read.
+                              ;     7-bit address is transmitted MSB first followed by '1' for read.
+                              ;
+                              ;   Repeat as required for command....
+                              ;     Receive byte from target device
+                              ;     transmit acknowledge (ACK)
+                              ;
+                              ;   Receive PEC from target device
+                              ;   Transmit Not-Acknowledge (NACK)
+                              ;      Note that this is a NACK to signify that the last byte of information
+                              ;      has been read by the master so that the slave knows that the transaction
+                              ;      is complete (apparently the bus stop which follows is not enough!).
+                              ;   Bus stop (P).
+                              ;
+                              ; Registers used  s0, s1, s2, s3, s4, s5, sE, sF
+                              ;
+                              ;
+      PMBus_read_transaction: LOAD s3, 00                                 ;byte counter and pointer to SPM
+                              LOAD sE, 00                                 ;clear PEC before calculation
+                              CALL I2C_initialise                         ;ensure bus state initialise 'sF'
+                              CALL I2C_start                              ;bus start (S)
+                              ;
+                              LOAD s5, sA                                 ;device address (7-bits)
+                              SL0 s5                                      ;Write operation (LSB = 0)
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              CALL I2C_Tx_byte                            ;Transmit address with write
+                              CALL I2C_Rx_ACK                             ;Receive ACK
+                              ;
+                              LOAD s5, sC                                 ;Command byte
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              CALL I2C_Tx_byte                            ;Transmit command byte
+                              CALL I2C_Rx_ACK                             ;Receive ACK
+                              ;
+                              CALL I2C_start                              ;bus repeat start (Sr)
+                              LOAD s5, sA                                 ;device address (7-bits)
+                              SL1 s5                                      ;Read operation (LSB = 1)
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              CALL I2C_Tx_byte                            ;Transmit address with read
+                              CALL I2C_Rx_ACK                             ;Receive ACK
+                              ;
+             PMBus_read_byte: CALL I2C_Rx_byte                            ;receive byte from target into s5
+                              CALL I2C_Tx_ACK                             ;transmit ACK
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              STORE s5, (s3)                              ;store byte in SPM
+                              ADD s3, 1'd                                 ;count bytes received
+                              COMPARE s3, sB                              ;Have all byte been read?
+                              JUMP NZ, PMBus_read_byte
+                              ;
+                              CALL I2C_Rx_byte                            ;receive PEC from target into s5
+                              CALL I2C_Tx_NACK                            ;transmit NACK to signify last byte has been read
+                              STORE s5, (s3)                              ;store PEC in SPM
+                              CALL I2C_stop                               ;transmit stop (P)
+                              ;
+                              COMPARE s5, sE                              ;check PEC value of transaction
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; PMBus Write Transaction
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; This routine will perform a complete transaction on the PMBus that will write information
+                              ; stored it in scratch pad memory (SPM) to the identified slave.
+                              ;
+                              ; When calling this routine....
+                              ;
+                              ;    sC - Must specify the command code for the transaction.
+                              ;
+                              ;    sA - Must provide the 7-bit address of the target device in range 00 to 7F hex.
+                              ;
+                              ;    sB - Should specify the number of data bytes to be written to the target device
+                              ;         (this should be the number expected for the specified command).
+                              ;
+                              ;    Scratch pad memory should contain the data to be written in the correct order
+                              ;    starting at location 00. Hence the last location that will be the value in
+                              ;    'sB' less one (e.g. when writing 4 bytes locations 00 to 03 will be used).
+                              ;
+                              ; On completion....
+                              ;
+                              ;    sE - Will contain the computed PEC value for the transaction.
+                              ;
+                              ;    Zero Flag - Check of ACK following PEC byte with 'Z' meaning valid operation.
+                              ;
+                              ; Note
+                              ;    The slave will only accept the data written and apply it if it receives the correct
+                              ;    PEC byte value. However there is no way to know if the slave did or did not accept
+                              ;    the transaction except by using another command to read information back.
+                              ;    This routine currently makes the assumption that communication with the target
+                              ;    device does generally work and only checks the ACK response following the final
+                              ;    PEC byte value.
+                              ;
+                              ; Example
+                              ;
+                              ;    PAGE command is 00 Hex so 'sC' should be set to 00 hex.
+                              ;    Target device has address 52 decimal so 'sA' should be set to 52'd or 68 hex.
+                              ;    The PAGE command should write 1 byte so 'sB' should be set to 1'd.
+                              ;    SPM location 00 = value to be written (e.g. 02 to select page 2).
+                              ;
+                              ;    After calling this routine
+                              ;       sE = computed PEC for the transaction.
+                              ;       Z flag = Z providing the slave a positively acknowledged the PEC byte.
+                              ;
+                              ;
+                              ; Format of a PMBus Write Transaction.....
+                              ;
+                              ;   Bus Start (S).
+                              ;   Transmit target address with write.
+                              ;     7-bit address is transmitted MSB first followed by '0' for write.
+                              ;   Receive acknowledgement from target device (ACK)
+                              ;   Transmit command byte.
+                              ;   Receive acknowledgement from target device (ACK)
+                              ;
+                              ;   Repeat as required for command....
+                              ;     Transmit byte to target device
+                              ;     Receive acknowledgement from target device (ACK)
+                              ;
+                              ;   Transmit PEC to target device
+                              ;   Receive acknowledgement from target device (ACK)
+                              ;   Bus stop (P).
+                              ;
+                              ;
+                              ; Registers used  s0, s1, s2, s3, s4, s5, sE, sF
+                              ;
+                              ;
+     PMBus_write_transaction: LOAD s3, 00                                 ;byte counter and pointer to SPM
+                              LOAD sE, 00                                 ;clear PEC before calculation
+                              CALL I2C_initialise                         ;ensure bus state initialise 'sF'
+                              CALL I2C_start                              ;bus start (S)
+                              ;
+                              LOAD s5, sA                                 ;device address (7-bits)
+                              SL0 s5                                      ;Write operation (LSB = 0)
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              CALL I2C_Tx_byte                            ;Transmit address with write
+                              CALL I2C_Rx_ACK                             ;Receive ACK
+                              ;
+                              LOAD s5, sC                                 ;Command byte
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              CALL I2C_Tx_byte                            ;Transmit command byte
+                              CALL I2C_Rx_ACK                             ;Receive ACK
+                              ;
+            PMBus_write_byte: FETCH s5, (s3)                              ;fetch data from SPM
+                              CALL compute_PEC                            ;PEC calculation for byte
+                              CALL I2C_Tx_byte                            ;Transmit data byte
+                              CALL I2C_Rx_ACK                             ;Receive ACK
+                              ADD s3, 1'd                                 ;count bytes transmitted
+                              COMPARE s3, sB                              ;Have all byte been written?
+                              JUMP NZ, PMBus_write_byte
+                              ;
+                              LOAD s5, sE                                 ;PEC byte value
+                              CALL I2C_Tx_byte                            ;Transmit PEC byte
+                              CALL I2C_Rx_ACK                             ;Receive ACK into LSB of s5
+                              CALL I2C_stop                               ;transmit stop (P)
+                              TEST s5, 00000001'b                         ;test for ACK or NACK response
+                              ;
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Compute Packet Error Checking (PEC).
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Each PMBus transaction terminates with the transmission or reception of a PEC byte. This
+                              ; can be used to confirm correct communication of all bytes within a transaction including
+                              ; the bytes defining the slave address and the read/write bits.
+                              ;
+                              ; The PEC is an 8-bit CRC using the polynomial X8 + X2 + X1 + 1.
+                              ;
+                              ; This routine will compute the PEC in register 'sE'.
+                              ;    1) Ensure 'sE' is  zero at the start of a PMBus transaction.
+                              ;    2) Call this routine with each byte of the transaction contained in 's5'.
+                              ;         (the contents of 's5' are preserved)
+                              ;    3) Make sure the value contained in 'sE' is not changed between calls
+                              ;       and until you have used it.
+                              ;
+                              ; Implementing the polynomial....
+                              ;
+                              ; The input byte (s5) is processed one bit at a time starting with the MSB. This is the
+                              ; same order in which the data bits were passed serially on the PMBus.
+                              ;
+                              ;  X8 - The input bit is XORed with the MSB of the current PEC value held in 'sE'.
+                              ;       Let's call this result 'p' to help with the description.
+                              ;
+                              ; The PEC value will then shift one bit to the left such that the MSB is lost with the
+                              ; following defining the remaining bits.
+                              ;     + 1 - The LSB takes the value of 'p'.
+                              ;    + X1 - Bit1 takes the previous value of bit0 XORed with 'p'.
+                              ;    + X2 - Bit2 takes the previous value of bit1 XORed with 'p'.
+                              ;           Bits[7:3] take bits[6:2]
+                              ;
+                              ; Registers used  s0, s1, sE
+                              ;
+                 compute_PEC: LOAD s0, 10000000'b                         ;start by selecting the MSB of input data
+                    PEC_loop: LOAD s1, sE                                 ;copy of current PEC
+                              TEST s5, s0                                 ;carry = input data bit selected
+                              SRA s1
+                              TEST s1, 11000000'b                         ;carry = 'p'
+                              JUMP NC, shift0_PEC
+                              XOR sE, 00000011'b                          ;When 'p'='1' complement bit0 and bit1
+                              SL1 sE                                      ;shift '1' into LSB as all bits shift left
+                              JUMP PEC_bits
+                  shift0_PEC: SL0 sE                                      ;When 'p'='0' only need to shift left
+                    PEC_bits: SR0 s0                                      ;move to next input bit
+                              JUMP NC, PEC_loop                           ;check when all 8 bits are processed
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; I2C Communication for PMBus
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; The following routines implement the fundamental I2C communication required by the CLK
+                              ; and DATA lines of the PMBus. The software delays implemented correspond with a data rate
+                              ; of approximately 100KHz which is a typical rate an well within the specification of the
+                              ; UCD9248 power supply controller.
+                              ;
+                              ; The CLK and DATA lines are open collector style and are associated with the following
+                              ; ports:-
+                              ;
+                              ;   PMBus_input_port - Input port used to read the logic levels on CLK and DATA pins
+                              ;   PMBus_output_port - Output port used to drive the logic levels on CLK and DATA pins
+                              ;
+                              ;   PMBus_clk  - Defines which bit is assigned to CLK on both ports
+                              ;   PMBus_data - Defines which bit is assigned to DATA on both ports
+                              ;
+                              ; Outputs are open collector type so that a KCPSM6 output of.....
+                              ;    '0' will result in drive of a low level.
+                              ;    '1' will result in output being tri-stated (Z) so that an external pull-up
+                              ;          resitor will generate a High level unless the slave hold the line Low.
+                              ;
+                              ; Limitations
+                              ;      Supports the standard 7-bit addressing scheme of I2C.
+                              ;      No arbitration for multiple masters (assumes the bus is always free to use).
+                              ;        However, it does support clock synchronisation allowing slaves to slow down
+                              ;        the clock by holding it low.
+                              ;
+                              ;
+                              ; Registers used  s0, s1, s2, s4, s5, sF
+                              ;
+                              ; IMPORTANT
+                              ;    Register 'sF' is used to control and remember the drive values to CLK and DATA
+                              ;    lines so its contents should not be disturbed between calls of the various
+                              ;    routines forming a communication packet.
+                              ;
+                              ;    Software delays called 'delay_2us', 'delay_4us' and 'delay_5us' must be provided
+                              ;    which implement delays of 2us, 4us and 5us using only registers s0, s1 and s2. These
+                              ;    will set the timing of the communication.
+                              ;
+                              ; THE I2C ROUTINES
+                              ;
+                              ; Generate a burst of 100 Low pulses on CLK line.
+                              ;
+                   I2C_flush: LOAD s4, 100'd                            ;100 pulses
+                  burst_loop: CALL I2C_clk_Low                          ;Drive CLK Low for 5us
+                              CALL I2C_clk_Z                            ;CLK = Z (and wait for High)
+                              CALL delay_5us                            ;Keep CLK High for 5us
+                              SUB s4, 1'd
+                              JUMP NZ, burst_loop
+                              ;
+                              ; Generate a Stop(P)
+                              ;    CLK is taken Low so that DATA can be taken Low without looking like a Start(S).
+                              ;    Then the CLK goes High so that the Low to High transition of DATA issues the (P). 
+                              ;
+                              CALL I2C_clk_Low                          ;Drive CLK Low for 5us
+                              CALL I2C_stop                             ;Stop(P)
+                              RETURN
+                              ;
+                              ; Initialise the CLK and DATA signals.
+                              ;   Places CLK and DATA into tri-state (Z) so that both lines reach idle High level.
+                              ;   This also initialises register sF ready for other routines.
+                              ;
+              I2C_initialise: LOAD sF, PMBus_clk                          ;CLK = Z
+                              OR sF, PMBus_data                           ;DATA = Z
+                              OUTPUT sF, PMBus_output_port
+                              RETURN 
+                              ;
+                              ;
+                              ; Drive CLK Low and wait for 5us before doing anything else.
+                              ;
+                 I2C_clk_Low: LOAD s0, PMBus_clk                          ; Prepare mask for CLK bit
+                              XOR s0, FF
+                              AND sF, s0                                  ;CLK = 0
+                              OUTPUT sF, PMBus_output_port
+                              CALL delay_5us
+                              RETURN 
+                              ;
+                              ;
+                              ; Places CLK into tri-state (Z) so that it can go High.
+                              ; Then wait for CLK to actually become High before returning because a slave
+                              ; has the ability to stretch a clock to slow communication down.
+                              ;
+                   I2C_clk_Z: OR sF, PMBus_clk                            ;CLK = Z
+                              OUTPUT sF, PMBus_output_port
+           I2C_wait_clk_High: INPUT s0, PMBus_input_port                  ;read external signals
+                              TEST s0, PMBus_clk                          ;test CLK bit
+                              JUMP Z, I2C_wait_clk_High                   ;wait if CLK held Low by slave
+                              RETURN 
+                              ;
+                              ;
+                              ; Drive DATA Low and wait for 5us before doing anything else.
+                              ;
+                I2C_data_Low: LOAD s0, PMBus_data                         ; Prepare mask for DATA bit
+                              XOR s0, FF
+                              AND sF, s0                                  ;DATA = 0
+                              OUTPUT sF, PMBus_output_port
+                              RETURN 
+                              ;
+                              ;
+                              ; Places DATA into tri-state (Z) so that it can go High.
+                              ; This can be used to transmit or receive a '1' but can also be used by the
+                              ; slave to return a '0' by holding the data line Low against the pull-up resistor.
+                              ;
+                  I2C_data_Z: OR sF, PMBus_data                           ;DATA = Z
+                              OUTPUT sF, PMBus_output_port
+                              RETURN 
+                              ;
+                              ;
+                              ; Perform and I2C start (S) or repeated start (Sr) condition.
+                              ;
+                              ; The routine ensures that both the CLK and DATA lines are released (High) in
+                              ; preparation for the High to Low transition of DATA whilst CLK is High used
+                              ; to signify the start condition.
+                              ;
+                              ; After a delay of 5us the DATA line is driven Low followed by CLK 4us later.
+                              ; There is then a 5us delay before doing anything else.
+                              ;
+                              ; Note that CLK is Low following a start (S) so it is ready to transmit or
+                              ; receive a byte using either the I2C_Tx_byte or I2C_Rx_byte routine.
+                              ;
+                   I2C_start: CALL I2C_data_Z                             ;DATA = Z (High)
+                              CALL I2C_clk_Z                              ;CLK = Z (waits until definitely High)
+                              CALL delay_5us                              ;delay before start (S)
+                              CALL I2C_data_Low                           ;High to How transition on DATA whilst CLK is High
+                              CALL delay_4us
+                              CALL I2C_clk_Low                            ;CLK = 0 (plus 5us delay)
+                              RETURN 
+                              ;
+                              ;
+                              ; Perform and I2C stop (P) condition
+                              ;
+                              ; This routine must be executed from the condition where CLK is Low which it would
+                              ; be following ether the I2C_Tx_ACK or I2C_Rx_ACK routine.
+                              ;
+                              ; DATA is driven Low (whilst CLK is Low) in preparation for the Low to High
+                              ; transition of DATA whilst CLK is High required to signify the stop condition.
+                              ;
+                              ; DATA is driven Low and then there is a delay of 5us before the CLK is released.
+                              ; Once CLK has actually been observed to go High there is a 4us delay before the
+                              ; Low to High transition as DATA is released.
+                              ;
+                              ;
+                    I2C_stop: CALL I2C_data_Low                           ;DATA = 0
+                              CALL delay_5us
+                              CALL I2C_clk_Z                              ;CLK = Z (waits until definitely High)
+                              CALL delay_4us
+                              CALL I2C_data_Z                             ;DATA = Z (High)
+                              RETURN 
+                              ;
+                              ;
+                              ; Transmits a single bit with DATA = 0 to signify acknowledge (ACK).
+                              ;
+                              ; This routine must be executed from the condition CLK low.
+                              ;
+                              ; The DATA line driven low 5us before the CLK clock pulse. The CLK clock pulse
+                              ; can be delayed by a slave, but the a High duration of 4us is guaranteed. The
+                              ; DATA bit remains Low for 5us after the CLK returns Low.
+                              ;
+                  I2C_Tx_ACK: CALL I2C_data_Low                           ;DATA = 0
+                              ;
+               I2C_clk_pulse: CALL delay_5us
+                              CALL I2C_clk_Z                              ;CLK = Z (waits until definitely High)
+                              CALL delay_4us                              ;clock pulse width
+                              CALL I2C_clk_Low                            ;end of CLK clock pulse includes 5us delay
+                              RETURN 
+                              ;
+                              ;
+                              ; Transmits a single bit with DATA = 1 to signify NO acknowledge (NACK).
+                              ;
+                              ; This routine must be executed from the condition CLK low.
+                              ;
+                              ; The DATA line is released (high) 5us before the CLK clock pulse. The CLK clock pulse
+                              ; can be delayed by a slave, but the a High duration of 4us is guaranteed. The
+                              ; DATA bit remains High for 5us after the CLK returns Low.
+                              ;
+                 I2C_Tx_NACK: CALL I2C_data_Z                             ;DATA = Z (High)
+                              JUMP I2C_clk_pulse                          ;generate clock pulse (includes return)
+                              ;
+                              ;
+                              ; Transmit one byte
+                              ;
+                              ; The byte to be transmitted must be provided in register 's5' and
+                              ; the routine must be executed from the condition SCL low.
+                              ;
+                              ; The data is transmitted MSB first with each bit being presented on
+                              ; the DATA line 5us before the CLK clock pulse. Each CLK clock pulse
+                              ; can be delayed by a slave, but the a High duration of 4us is guaranteed. The
+                              ; DATA bit persists for 5us after each time the CLK returns Low.
+                              ;
+                 I2C_Tx_byte: LOAD s4, 10000000'b                         ;8-bits to transmit starting with MSB
+             I2C_Tx_next_bit: TEST s5, s4                                 ;test data bit for High or Low
+                              JUMP NZ, I2C_Tx1
+                              CALL I2C_data_Low                           ;DATA = 0
+                              JUMP I2C_Tx_tsu
+                     I2C_Tx1: CALL I2C_data_Z                             ;DATA = Z (High)
+                  I2C_Tx_tsu: CALL I2C_clk_pulse                          ;generate clock pulse with delays
+                              SR0 s4                                      ;move to next bit
+                              RETURN C                                    ;have 8 bits been transmitted?
+                              JUMP I2C_Tx_next_bit
+                              ;
+                              ;
+                              ; Receive one bit of data
+                              ;
+                              ; The bit received is shifted into the LSB of register 's5'.
+                              ;
+                              ; This the routine must be executed from the condition CLK low.
+                              ;
+                              ; The DATA line is released to allow a slave to transmit. There will be a
+                              ; 5us delay before the CLK is released to start a clock pulse. The start of
+                              ; the clock pulse can be delayed by a slave but a High duration of 4us is
+                              ; guaranteed. The value of the DATA line is sampled at the mid-point of the
+                              ; 4us high period (i.e. after 2us). The CLK clock pulse is followed by a
+                              ; delay of 5us before anything else can happen.
+                              ;
+                  I2C_Rx_bit: CALL I2C_data_Z                             ;DATA = Z (slave can now drive)
+                              CALL delay_5us
+                              CALL I2C_clk_Z                              ;CLK = Z (waits until definitely High)
+                              CALL delay_2us                              ;middle of SCL clock pulse
+                              INPUT s0, PMBus_input_port                  ;read external signals
+                              TEST s0, PMBus_data                         ;set carry flag with value of DATA
+                              SLA s5                                      ;shift received bit into LSB of s5
+                              CALL delay_2us                              ;complete 4us SCL clock pulse
+                              CALL I2C_clk_Low                            ;end of clock pulse includes 5us delay
+                              RETURN 
+                              ;
+                              ;
+                              ; Receive a single bit and test for I2C Acknowledge from a slave
+                              ;
+                              ; This the routine must be executed from the condition CLK low.
+                              ;
+                              ; The received bit will be set into the LSB of register 's5' but a further
+                              ; test will be performed such that....
+                              ;
+                              ;       ACK               ZERO(Z)    CARRY(C)
+                              ;      0 = True (ACK)       1           0
+                              ;      1 = False (NACK)     0           1
+                              ;
+                  I2C_Rx_ACK: CALL I2C_Rx_bit                             ;receive ACK bit into LSB of s5
+                              TEST s5, 00000001'd                         ;set flags
+                              RETURN 
+                              ;
+                              ;
+                              ; Receive one byte from the I2C SDA line
+                              ;
+                              ; The byte received will be returned in register 's5' and this
+                              ; routine must be executed from the condition CLK low.
+                              ;
+                 I2C_Rx_byte: LOAD s4, 8'd                                ;8-bits to receive
+             I2C_Rx_next_bit: CALL I2C_Rx_bit                             ;receive and shift bit into LSB of s5
+                              SUB s4, 1'd                                 ;count bits received
+                              JUMP NZ, I2C_Rx_next_bit
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Software Delays
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; All based on 50MHz clock
+                              ; The number of iterations of a delay loop required to form each delay required are
+                              ; loaded into the register set [s2,s1,s0] and then the delay loop is started.
+                              ;
+                              ; 1us is only 50 clock cycles requiring only 25 instructions so is treated as a
+                              ; special case.
+                              ;
+                              ; Registers used s0, s1, s2
+                              ;
+                   delay_1us: LOAD s0, 11'd                               ;1us requires only 25 instructions (CALL takes 1 of them)
+                    loop_1us: SUB s0, 1'd                                 ;  (11 x 2) + 2 + 1 = 25
+                              JUMP NZ, loop_1us
+                              RETURN 
+                              ;
+                   delay_2us: LOAD s2, 00                                 ;2us is 100 clock cycles requiring 12 delay iterations
+                              LOAD s1, 00
+                              LOAD s0, 12'd
+                              JUMP software_delay
+                              ;
+                   delay_4us: LOAD s2, 00                                 ;4us is 200 clock cycles requiring 25 delay iterations
+                              LOAD s1, 00
+                              LOAD s0, 25'd
+                              JUMP software_delay
+                              ;
+                   delay_5us: LOAD s2, 00                                 ;5us is 250 clock cycles requiring 31 delay iterations
+                              LOAD s1, 00
+                              LOAD s0, 31'd
+                              JUMP software_delay
+                              ;
+                  delay_40us: LOAD s2, 00                                 ;40us is 2000 clock cycles requiring 250 delay iterations
+                              LOAD s1, 00
+                              LOAD s0, FA
+                              JUMP software_delay
+                              ;
+                   delay_1ms: LOAD s2, 00                                 ;1ms is 50,000 clock cycles requiring 6,250 delay iterations
+                              LOAD s1, 18
+                              LOAD s0, 6A
+                              JUMP software_delay
+                              ;
+                   delay_5ms: LOAD s2, 00                                 ;5ms is 250,000 clock cycles requiring 31,250 delay iterations
+                              LOAD s1, 7A
+                              LOAD s0, 12
+                              JUMP software_delay
+                              ;
+                  delay_20ms: LOAD s2, 01                                 ;20ms is 1,000,000 clock cycles requiring 125,000 delay iterations
+                              LOAD s1, E8
+                              LOAD s0, 48
+                              JUMP software_delay
+                              ;
+                 delay_100ms: LOAD s2, 09                                 ;100ms is 5,000,000 clock cycles requiring 625,000 delay iterations
+                              LOAD s1, 89
+                              LOAD s0, 68
+                              JUMP software_delay
+                              ;
+                    delay_1s: LOAD s2, 5F                                 ;1s is 50,000,000 clock cycles requiring 6,250,000 delay iterations
+                              LOAD s1, 5E
+                              LOAD s0, 10
+                              JUMP software_delay
+                              ;
+                              ; The delay loop decrements [s2,s1,s0] until it reaches zero
+                              ; Each decrement cycle is 4 instructions which is 8 clock cycles (160ns at 50MHz)
+                              ;
+              software_delay: SUB s0, 1'd
+                              SUBCY s1, 0'd
+                              SUBCY s2, 0'd
+                              JUMP NZ, software_delay
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; 16x16 bit Multiplication
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; 16-bit x 16-bit Multiplication
+                              ;     16-bit input [s5,s4]        (contents of [s5,s4] are not changed)
+                              ;     16-bit input [s7,s6]
+                              ;     32-bit output [s3,s2,s1,s0]
+                              ;
+                  mult_16x16: LOAD s8, 16'd                               ;16-bits to multiply by
+                              LOAD s3, 00                                 ;clear result
+                              LOAD s2, 00                                 ;[s1,s0] do not need to be reset
+             mult_16x16_loop: SR0 s7                                      ;multiply by LSB to MSB
+                              SRA s6                                      ;
+                              JUMP NC, shift32
+                              ADD s2, s4                                  ;add [s5,s4] to upper 16-bits of result
+                              ADDCY s3, s5
+                     shift32: SRA s3                                      ;shift result right (/2)
+                              SRA s2                                      ;shift includes any carry from addition
+                              SRA s1
+                              SRA s0
+                              SUB s8, 1'd                                 ;count iterations
+                              JUMP NZ, mult_16x16_loop
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; LINEAR 11 format to fixed point <5.11> format conversion
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Convert LINEAR 11 format to fixed point <5.11> format.
+                              ; Values up to 31.9995 with a resolution of 0.0005 supported.
+                              ; [s5,s4] is converted.
+                              ;
+            LINEAR11_to_5b11: LOAD s0, s5                                 ;isolate the 5-bit exponent
+                              SRX s0                                      ;shift right 3 bits with sign extend
+                              SRX s0
+                              SRX s0
+                              AND s5, 00000111'b                          ;isolate mantissa
+                              ADD s0, 11'd                                ;calculate bit shift required
+                              TEST s0, 10000000'b                         ;test sign bit
+                              JUMP Z, m_shift_left                        ;positive is '0'
+                              ;
+               m_shift_right: SR0 s5                                      ;shift right
+                              SRA s4
+                              ADD s0, 1'd                                 ;count up until -ve reaches zero
+                              JUMP NZ, m_shift_right
+                              ;
+                m_shift_left: COMPARE s0, 00                              ;check if already zero
+                              RETURN Z
+                              SL0 s4                                      ;shift left
+                              SLA s5
+                              SUB s0, 1'd                                 ;count down until +ve reaches zero
+                              JUMP m_shift_left
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Write 32-bit word to BRAM
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; The 10-bit address must be defined in [s9:s8].
+                              ; The 32-bit data must be defined in [sD,sC,sB,sA].
+                              ;
+                              ; The address and data are presented to the BRAM and then the BRAM is enabled with
+                              ; write enable active.
+                              ;
+                  write_word: OUTPUT s8, address_port0
+                              OUTPUT s9, address_port1
+                              OUTPUT sA, data_out_port0
+                              OUTPUT sB, data_out_port1
+                              OUTPUT sC, data_out_port2
+                              OUTPUT sD, data_out_port3
+                              OUTPUTK bram_write, bram_control_port       ;EN=1 and WE=1
+                              OUTPUTK bram_off, bram_control_port
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Read 32-bit word from BRAM
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; The 10-bit address must be defined in [s9:s8].
+                              ; The 32-bit data will be returned in [sD,sC,sB,sA].
+                              ;
+                              ; The address is presented to the BRAM and then the BRAM is enabled so that the contents
+                              ; can be read from that location. The 32-bit data is captured on the BRAM outputs when
+                              ; the EN control is High. This value is then read as 4 bytes into the [sD,sC,sB,sA]
+                              ; registers.
+                              ;
+                              ; Note that due to the synchronous nature of the BRAM and the pipeline stage of the
+                              ; input port selection multiplexer there must be at least one instruction between then
+                              ; OUTPUTK used to enable the BRAM and the first INPUT instruction used to read the data.
+                              ; As it happens, the OUTPUTK instruction used to disable the BRAM provides the required
+                              ; software delay and also helps to ensure that the 32-bit value that is then captured
+                              ; is made of 4 bytes from the same value (i.e. not an invalid value formed from reading
+                              ; a location that is varying over time within the BRAM due to second port writes).
+                              ;
+                   read_word: OUTPUT s8, address_port0
+                              OUTPUT s9, address_port1
+                              OUTPUTK bram_read, bram_control_port        ;EN=1
+                              OUTPUTK bram_off, bram_control_port         ;Freeze value and latency
+                              INPUT sA, data_in_port0
+                              INPUT sB, data_in_port1
+                              INPUT sC, data_in_port2
+                              INPUT sD, data_in_port3
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Read XADC
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Read register via DRP.
+                              ; The address of the register to be read must be provided in sA.
+                              ; The 16-bit register value will be returned in [s9,s8].
+                              ;
+                              ; Registers used s0, s8, s9 and sA.
+                              ;
+                   read_XADC: OUTPUT sA, XADC_addr_port                 ;set address (DADDR)
+                              OUTPUTK XADC_Read, XADC_operation_port    ;Start read transaction
+                              CALL XADC_wait                            ;Test 'Transaction In Progress' Flag
+                              INPUT s9, XADC_read_port1                 ;read register value into [s9,s8]
+                              INPUT s8, XADC_read_port0
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Write XADC
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Write register via DRP.
+                              ; The address of the register to be read must be provided in sA.
+                              ; The 16-bit register value to be written must be provided in [s9,s8].
+                              ;
+                              ; Registers used s0, s1, s2, s4 (preserved) and s5.
+                              ;
+                  write_XADC: OUTPUT sA, XADC_addr_port                 ;set address (DADDR)
+                              OUTPUT s9, XADC_din_port1                 ;set data (DI)
+                              OUTPUT s8, XADC_din_port0
+                              OUTPUTK XADC_Write, XADC_operation_port ;Start write transaction
+                              ;
+                              ;
+                              ; Having started a transaction wait for the 'Transaction In Progress' Flag to
+                              ; clear (corresponding with DRDY pulse).
+                              ;
+                   XADC_wait: INPUT s0, XADC_status_port                ;Test
+                              TEST s0, XADC_TIP                         ; and wait for completion
+                              JUMP NZ, XADC_wait
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Set ADC Clock Frequency
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; The XADC uses the DCLK input to drive all operations and this must be in the
+                              ; range 8 to 80MHz. In this design a 50MHz clock is used on the ML605 board so this
+                              ; requirement is met.
+                              ;
+                              ; Internally to the XADC the DCLK is divided to form a clock which drives the
+                              ; actual A/D converter. This clock is refered to as 'ADCCLK' and must be in the range
+                              ; 1 to 5.2MHz. An 8-bit clock division factor CD[7:0] can be set to obtain a suitable
+                              ; ADCCLK frequency using the DCLK frequency provided.
+                              ;
+                              ; The CD[7:0] value is set by writing 'Configuration Register 2' which actually has
+                              ; a register address of 42 hex. CD[7:0] occupies bits[15:8] of the register with bits[7:0]
+                              ; being set to zero.
+                              ;
+                              ; This routine will set CD[7:0] to 10 decimal so that the ADCCLK will be ~5.0MHz.
+                              ;
+                              ;   CD[7:0] = 0A hex     Therefore   Configuration Register 2 = 0A00
+                              ;
+                              ;
+                              ; Registers used s0, s1, s2, s4 (preserved) and s5.
+                              ;
+        set_ADCCLK_frequency: LOAD sA, 42                                 ;Configuration register 2
+                              LOAD s9, 10'd                               ;Value = 0D00
+                              LOAD s8, 00
+                              CALL write_XADC
+                              ;CALL read_XADC
+                              ;CALL send_hex_word
+                              ;CALL send_CR
+                              RETURN  
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; ADC Calibration
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; For the XADC to achieve the published 10-bit accuracy it must be calibrated and
+                              ; then sampling be performed with sample calibration enabled.
+                              ;
+                              ; Status register
+                              ;    08 hex = Supply sensor offset
+                              ;    09 hex = ADC offset
+                              ;    0A hex = ADC gain error
+                              ;
+                              ; Performing a conversion on channel 08 hex will compute the required values by using the
+                              ; external VREF as an input to the A/D converter.
+                              ;
+                              ; 'Configuration Register 1' (register address of 41) should then have bits[7:4] set to
+                              ; "1010" which will enable offset and gain correction for supply sensor and ADC.
+                              ;
+                              ;
+                              ;
+                              ; Set up continuous sampling on channel 08
+                              ;
+                              ;
+                              ; Configuration register 0 (40 hex)
+                              ;
+                              ;   16-bit Configuration register 0 = 0000 0 BU EC AQU 000 CH4 CH3 CH2 CH1 CH0
+                              ;
+                              ;   bits[4:0] = CH[4:0] Selects channel ("01000" for Calibration)
+                              ;      bit[8] = AQU = 1   I think this means a better quality of sample is achieved!
+                              ;      bit[9] = EC = 0    Continuous sampling mode ('1' would be 'Event Driven').
+                              ;     bit[10] = BU = 1    Bipolar operating mode (0 = Unipolar).
+                              ;
+                              ;     Configuration register 0 = 0000 0101 0000 1000 = 0508 hex
+                              ;
+                              ; Configuration register 1 (41 hex)
+                              ;
+                              ;   16-bit Configuration register 1 = 00 SEQ1 SEQ0 0000 CAL3 CAL2 CAL1 CAL0 0000
+                              ;
+                              ;   bits[13:12] = SEQ[1:0] = "11" for Single Channel Mode
+                              ;   bits[7:4] = CAL[3:0] = "1010" enables calibration of offset and gain
+                              ;
+                              ;     Configuration register 1 = 0011 0000 1010 0000 = 30A0 hex
+                              ;
+             ADC_Calibration: LOAD sA, 40                                 ;Configuration register 0
+                              LOAD s9, 05                                 ; = 0508 is channel 8
+                              LOAD s8, 08
+                              CALL write_XADC
+                              LOAD sA, 41                                 ;Configuration register 1
+                              LOAD s9, 30                                 ; = 3000
+                              LOAD s8, 00
+                              CALL write_XADC
+                              CALL delay_1ms                              ;time for some samples
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Select Temperature Measurement
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Places the XADC into continuous sampling mode with the die temperature
+                              ; channel selected.
+                              ;
+                              ; This requires 'Configuration Register 0' (register address of 40 hex) and 'Configuration
+                              ; Register 1' (register address of 41 hex) to be set with the following values....
+                              ;
+                              ; Configuration register 0 (40 hex)
+                              ;
+                              ;   16-bit Configuration register 0 = 0000 0 BU EC AQU 000 CH4 CH3 CH2 CH1 CH0
+                              ;
+                              ;   bits[4:0] = CH[4:0] Selects channel ("00000" for Temperature)
+                              ;      bit[8] = AQU = 1   I think this means a better quality of sample is achieved!
+                              ;      bit[9] = EC = 0    Continuous sampling mode ('1' would be 'Event Driven').
+                              ;     bit[10] = BU = 1    Bipolar operating mode (0 = Unipolar).
+                              ;
+                              ;     Configuration register 0 = 0000 0101 0000 0000 = 0500 hex
+                              ;
+                              ; Configuration register 1 (41 hex)
+                              ;
+                              ;   16-bit Configuration register 1 = 00 SEQ1 SEQ0 0000 CAL3 CAL2 CAL1 CAL0 0000
+                              ;
+                              ;   bits[13:12] = SEQ[1:0] = "11" for Single Channel Mode
+                              ;   bits[7:4] = CAL[3:0] = "1010" enables calibration of offset and gain
+                              ;
+                              ;     Configuration register 1 = 0011 0000 1010 0000 = 30A0 hex
+                              ;
+                              ;
+                              ;
+                              ; Registers used s0, s1, s2, s4 (preserved) and s5.
+                              ;
+                              ;
+                 select_TEMP: LOAD sA, 40                                 ;Configuration register 0
+                              LOAD s9, 05                                 ; = 0500
+                              LOAD s8, 00
+                              CALL write_XADC
+                              LOAD sA, 41                                 ;Configuration register 1
+                              LOAD s9, 30                                 ; = 30A0
+                              LOAD s8, A0
+                              CALL write_XADC
+                              CALL delay_1ms                              ;time for some samples
+                              RETURN 
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Sample Die Temperature
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Reads XADC channel 0 (register address 00) to obtain the current die
+                              ; temperature.
+                              ;
+                              ; Note that 'select_TEMP' should have been used previosuly so that the XADC is
+                              ; performing continuous sampling of the temperature channel.
+                              ;
+                 TEMP_sample: LOAD sA, 00                                 ;register 00 (Temperature)
+                              CALL read_XADC                              ;read 16-bit value into [s9,s8]
+                              CALL scale_sample                           ;scale [s9,s8] to 10-bits
+                              CALL convert_temp                           ;convert to temperature in degC into [s3,s2]
+                              LOAD s9, 00                                 ;[s9,s8] BRAM address die_temp
+                              LOAD s8, die_temp
+                              LOAD sD, 00                                 ;[sD,sC,sB,sA] BRAM data die_temp
+                              LOAD sC, 00
+                              LOAD sB, s3
+                              LOAD sA, s2
+                              CALL write_word                             ;write BRAM
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Scale XADC ADC Code from 16-bits to 10-bits
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; When reading an ADC code from a XADC Status Register a 16-bit value will be
+                              ; returned in [s9,s8]. In most cases it is the 10-bit value contained in the most
+                              ; significant bits that is valid and relevant. This routine simply shifts the value
+                              ; provided in [s9,s8] right but 6 places to scale the value down to 10-bits.
+                              ;                        ;
+                              ; Registers used s0, s8 and s9.
+                              ;
+                scale_sample: LOAD s0, 6'd                                ;shift [s9,s8] right 6 places
+                         sr6: SR0 s9
+                              SRA s8
+                              SUB s0, 1'd
+                              JUMP NZ, sr6
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Conversion of temperature value read from XADC into centigrade value
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; The value read from the System monitor is 16-bits of which only the most significant
+                              ; 10-bits are valid within the device specification. The lower 6-bits can be used in a
+                              ; process of sample averaging but this only improves the quality of the 10-bit value.
+                              ;
+                              ; To convert the code from the ADC of the XADC into a centigrade value the
+                              ; following applies.
+                              ;
+                              ;    Temperature (degC) = ((ADCcode x 503.975) / 1024) - 273.15
+                              ;
+                              ; Based on this formula....
+                              ;
+                              ;       ADCcode =  (Temperature (degC) + 273.15) * (1024 / 503.975)
+                              ;
+                              ; Expected 10-bit decimal ADC codes are....
+                              ;                                    (16-bit Hex codes have 10-bit code in MSBs)
+                              ;    -40degC -->  ADCcode = 474      ( 7680 )
+                              ;      0degC -->  ADCcode = 555      ( 8AC0 )
+                              ;   +100degC -->  ADCcode = 758      ( BD80 )
+                              ;
+                              ; The conversion from scaled ADC Code to degC has to be achieved using fixed point
+                              ; arithmetic and a suitable resolution. Realistically a result in whole degrees
+                              ; is a suitable target (using rounding).
+                              ;
+                              ; This routine
+                              ;
+                              ; The 10-bit scaled ADCcode should be provided in the LSB's of [s9,s8].
+                              ;
+                              ; The value in [s9,s8] is copied to [s5,s4] and then scaled by a 16-bit value
+                              ; equivalent to 503.975/1024 = 0.4922 using a 16x16 bit multiply and obtaining
+                              ; a 32-bit result.
+                              ;
+                              ;     7DFE hex / 2^16 = 32254 / 65536 = 0.4922
+                              ;
+                              ; The constant -273.15 is then subtracted using the same 2^16 scaling but in
+                              ; order to achieve rounding before truncation to an integer 0.5 is added
+                              ; during the same operation.
+                              ;
+                              ;    -(273.15 - 0.5) x 2^16 = -272.65 x 65536 = 17,868,390 = 0110A666 hex
+                              ;
+                              ; Example +100degC
+                              ;
+                              ;     10-bit scaled ADCcode =        2F6 hex
+                              ;                                 x 7DFE hex
+                              ;                               --------
+                              ;                               01750E14 hex
+                              ;                             - 0110A666 hex
+                              ;                               --------
+                              ;                               006467AE hex
+                              ;
+                              ;
+                convert_temp: LOAD s3, s9                                 ;[s5,s4] = Scaled ADC code
+                              LOAD s2, s8
+                              ;
+                              ;LOAD s7, 7D                                 ;[s7,s6] = scaling factor
+                              ;LOAD s6, FE
+                              ;CALL mult_16x16                             ;[s3,s2,s1,s0] = result
+                              ;
+                              ;SUB s0, 66                                  ;Subtract constant
+                              ;SUBCY s1, A6
+                              ;SUBCY s2, 10
+                              ;SUBCY s3, 01                                ;[s3,s2] = temperature in degC
+                              RETURN
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Control Power Consuming Modules
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                  update_PCM: LOAD s9, 00
+                              LOAD s8, pcm_control
+                              CALL read_word
+                              LOAD sA, 00
+                              AND sB, 11000000'b                          ;make sure #PCMs available = bits [13:0] is always 0
+                              OUTPUT sA, control_sinks_port0              
+                              OUTPUT sB, control_sinks_port1              
+                              OUTPUT sC, control_sinks_port2
+                              OUTPUT sD, control_sinks_port3
+                              ;
+                              LOAD s2, sB
+                              LOAD s3, sC
+                              LOAD s4, sD
+                              SR0 s4                                      ;shift right [s4,s3,s2] by six bit positions
+                              SRA s3
+                              SRA s2
+                              SR0 s4                                      ;#2
+                              SRA s3
+                              SRA s2
+                              SR0 s4                                      ;#3
+                              SRA s3
+                              SRA s2
+                              SR0 s4                                      ;#4
+                              SRA s3
+                              SRA s2
+                              SR0 s4                                      ;#5
+                              SRA s3
+                              SRA s2
+                              SR0 s4                                      ;#6
+                              SRA s3                                      ;s2 = xxxxxxxx
+                              SRA s2                                      ;s3 = --xxxxxx
+                              AND s3, 00111111'b                          ;s3 = 00xxxxxx
+                              COMPARE s2, 00                              ;if #PCMs active is 0, send all PCMs to sleep
+                              COMPARECY s3, 00
+                              JUMP Z, PCM_sleep
+                              OUTPUTK wake, sleep_sink_port
+                              JUMP PCM_monitor
+                   PCM_sleep: LOAD sD, 00                                 ;turn off KCPSM6, LFSR, Accumulator, and Toggle Flip-Flops
+                              OUTPUT sD, control_sinks_port2
+                              OUTPUTK sleep, sleep_sink_port
+                              ;
+                 PCM_monitor: LOAD s9, 00
+                              LOAD s8, pcm_monitor
+                              INPUT sA, monitor_sinks_port0
+                              INPUT sB, monitor_sinks_port1
+                              INPUT sC, monitor_sinks_port2
+                              INPUT sD, monitor_sinks_port3                              
+                              CALL write_word
+                              RETURN
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; Interrupt Service Routine (ISR)
+                              ;------------------------------------------------------------------------------------------
+                              ;
+                              ; Interrupt is not used in this program
+                              ;
+                              ADDRESS 7F0
+                              ;
+                              ;
+                         ISR: RETURNI DISABLE
+                              ;
+                              ;
+                              ;------------------------------------------------------------------------------------------
+                              ; End of Program
+                              ;------------------------------------------------------------------------------------------
+                              ;

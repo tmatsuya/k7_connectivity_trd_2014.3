@@ -1,0 +1,53 @@
+#!/bin/sh
+
+# Start with the default : assumption that the internal interfaces are not
+#   ethX
+XETH0=eth0
+XETH1=eth1
+
+# Check if eth0 exists by default
+if /sbin/ifconfig | grep -q "eth0"; then
+#  echo "eth0 detected"
+  XETH0=eth1
+  XETH1=eth2
+fi
+# Check if eth1 exists by default
+if /sbin/ifconfig | grep -q "eth1"; then
+#  echo "eth1 detected"
+  XETH0=eth2
+  XETH1=eth3
+fi
+# Check if eth2 exists by default
+if /sbin/ifconfig | grep -q "eth2"; then
+#  echo "eth2 detected"
+  XETH0=eth3
+  XETH1=eth4
+fi
+# Check if eth3 exists by default
+if /sbin/ifconfig | grep -q "eth3"; then
+#  echo "eth3 detected"
+  XETH0=eth4
+  XETH1=eth5
+fi
+
+ifconfig $XETH0 10.50.0.1/24 
+ifconfig $XETH1 10.50.1.1/24 
+
+# source IP 10.50.0.1 -> 10.60.0.1 when going to 10.60.1.1
+iptables -t nat -A POSTROUTING -s 10.50.0.1 -d 10.60.1.1 -j SNAT --to-source 10.60.0.1
+# nat inbound 10.60.0.1 -> 10.50.0.1
+iptables -t nat -A PREROUTING -d 10.60.0.1 -j DNAT --to-destination 10.50.0.1 
+
+# source IP 10.50.1.1 -> 10.60.1.1 when going to 10.60.0.1
+iptables -t nat -A POSTROUTING -s 10.50.1.1 -d 10.60.0.1 -j SNAT --to-source 10.60.1.1
+# nat inbound 10.60.1.1 -> 10.50.1.1
+iptables -t nat -A PREROUTING -d 10.60.1.1 -j DNAT --to-destination 10.50.1.1 
+
+ip route add 10.60.1.1 dev $XETH0
+arp -i $XETH0 -s 10.60.1.1 aa:00:cc:dd:ee:ff
+
+ip route add 10.60.0.1 dev $XETH1
+arp -i $XETH1 -s 10.60.0.1 aa:bb:cc:dd:ee:ff
+
+echo "IP address 10.50.0.1 is translated to 10.60.0.1 and 10.50.1.1 to 10.60.1.1"
+echo "Try ping 10.60.0.1 and ping 10.60.1.1 to see ping packets going to hardware"

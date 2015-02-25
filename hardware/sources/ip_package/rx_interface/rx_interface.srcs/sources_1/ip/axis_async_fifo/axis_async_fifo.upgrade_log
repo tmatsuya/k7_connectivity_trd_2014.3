@@ -1,0 +1,16 @@
+Copyright 1986-2014 Xilinx, Inc. All Rights Reserved.
+----------------------------------------------------------------------------------------------------
+| Tool Version : Vivado v.2014.3.0 (lin64) Build 980486 Sat Aug  9 18:56:01 MDT 2014
+| Date         : Mon Aug 11 14:29:49 2014
+| Host         : xhd-lin64re92 running 64-bit Red Hat Enterprise Linux Client release 5.9 (Tikanga)
+| Command      : upgrade_ip
+| Device       : xc7k325tffg900-2
+----------------------------------------------------------------------------------------------------
+
+Upgrade Log for IP 'axis_async_fifo'
+
+1. Summary
+----------
+
+SUCCESS in the upgrade of axis_async_fifo (xilinx.com:ip:fifo_generator:12.0) to (Rev. 2)
+

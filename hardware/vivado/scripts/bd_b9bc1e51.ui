@@ -1,0 +1,175 @@
+{
+   Display-PortTypeClock: "false",
+   Display-PortTypeData: "true",
+   Display-PortTypeOthers: "false",
+   Display-PortTypeReset: "false",
+   comment_1: "Reset
+Module",
+   comment_2: "PCIe
+Path",
+   comment_4: "DDR
+Memory",
+   comment_5: "Packet
+DMA",
+   comment_6: "Ethernet
+Path",
+   comment_7: "Gen/Chk",
+   commentid: "comment_1|comment_2|comment_4|comment_5|comment_6|comment_7|",
+   font_comment_1: "41",
+   font_comment_2: "41",
+   font_comment_4: "41",
+   font_comment_5: "42",
+   font_comment_6: "42",
+   font_comment_7: "42",
+   guistr: "# # String gsaved with Nlview version 6.3.10  2014-03-03 bk=1.3043 VDI=34 GEI=35 GUI=JA:1.7
+#  -string -flagsOSRD
+preplace port rx_interface_0_soft_reset -pg 1 -y 2470 -defaultsOSRD
+preplace port clk_ref_n -pg 1 -y 1320 -defaultsOSRD
+preplace port rx_interface_1_soft_reset -pg 1 -y 2500 -defaultsOSRD
+preplace port clk_ref_p -pg 1 -y 1340 -defaultsOSRD
+preplace port axi_lite_aresetn -pg 1 -y 2440 -defaultsOSRD
+preplace port m03_axis_aresetn -pg 1 -y 950 -defaultsOSRD
+preplace port tx_disable -pg 1 -y 1820 -defaultsOSRD
+preplace port user_clk_out -pg 1 -y 1590 -defaultsOSRD
+preplace port pcs_pma_1_reset -pg 1 -y 2290 -defaultsOSRD
+preplace port pcs_pma_1_rx_resetdone -pg 1 -y 1760 -defaultsOSRD
+preplace port mmcm_locked_clk156 -pg 1 -y 1700 -defaultsOSRD
+preplace port xphy0_txn -pg 1 -y 1880 -defaultsOSRD
+preplace port DDR3 -pg 1 -y 940 -defaultsOSRD
+preplace port drp -pg 1 -y 450 -defaultsOSRD
+preplace port pmbus_alert -pg 1 -y 880 -defaultsOSRD
+preplace port s_axis_pause_1 -pg 1 -y 1500 -defaultsOSRD
+preplace port xphy0_txp -pg 1 -y 1920 -defaultsOSRD
+preplace port axi_str_s2c1_areset_n -pg 1 -y 590 -defaultsOSRD
+preplace port xphy1_tx_fault -pg 1 -y 140 -defaultsOSRD
+preplace port xphy1_rxn -pg 1 -y 2330 -defaultsOSRD
+preplace port s00_axis_aresetn -pg 1 -y 2360 -defaultsOSRD
+preplace port ten_gig_mac_0_reset -pg 1 -y 1250 -defaultsOSRD
+preplace port tx_disable_1 -pg 1 -y 1840 -defaultsOSRD
+preplace port xphy1_rxp -pg 1 -y 2560 -defaultsOSRD
+preplace port xphy0_refclk_n -pg 1 -y 2040 -defaultsOSRD
+preplace port pmbus_data -pg 1 -y 790 -defaultsOSRD
+preplace port xphy0_refclk_p -pg 1 -y 2020 -defaultsOSRD
+preplace port xphy0_rxn -pg 1 -y 2180 -defaultsOSRD
+preplace port xphy1_txn -pg 1 -y 1980 -defaultsOSRD
+preplace port xphy0_rxp -pg 1 -y 2200 -defaultsOSRD
+preplace port calib_done -pg 1 -y 880 -defaultsOSRD
+preplace port xphy1_txp -pg 1 -y 2000 -defaultsOSRD
+preplace port sys_clk -pg 1 -y 1080 -defaultsOSRD
+preplace port m01_axis_aresetn -pg 1 -y 750 -defaultsOSRD
+preplace port pcie_link_up -pg 1 -y 670 -defaultsOSRD
+preplace port user_lnk_up -pg 1 -y 750 -defaultsOSRD
+preplace port pcs_pma_0_rx_resetdone -pg 1 -y 1720 -defaultsOSRD
+preplace port mcb_clk -pg 1 -y 980 -defaultsOSRD
+preplace port pcs_pma_0_reset -pg 1 -y 2520 -defaultsOSRD
+preplace port m00_axis_aresetn -pg 1 -y 550 -defaultsOSRD
+preplace port axi_str_c2s0_areset_n -pg 1 -y 540 -defaultsOSRD
+preplace port user_reset -pg 1 -y 100 -defaultsOSRD
+preplace port s03_axis_aresetn -pg 1 -y 2420 -defaultsOSRD
+preplace port xphy1_signal_detect -pg 1 -y 2580 -defaultsOSRD
+preplace port xphy0_signal_detect -pg 1 -y 2220 -defaultsOSRD
+preplace port rx_interface_0_reset -pg 1 -y 1120 -defaultsOSRD
+preplace port axi_str_s2c0_areset_n -pg 1 -y 560 -defaultsOSRD
+preplace port s02_axis_aresetn -pg 1 -y 2400 -defaultsOSRD
+preplace port pcs_pma_1_tx_resetdone -pg 1 -y 1780 -defaultsOSRD
+preplace port ten_gig_mac_1_reset -pg 1 -y 1100 -defaultsOSRD
+preplace port tx_cfg_gnt -pg 1 -y 1040 -defaultsOSRD
+preplace port perst_n -pg 1 -y 20 -defaultsOSRD
+preplace port xphy0_tx_fault -pg 1 -y 120 -defaultsOSRD
+preplace port pmbus_clk -pg 1 -y 770 -defaultsOSRD
+preplace port s01_axis_aresetn -pg 1 -y 2380 -defaultsOSRD
+preplace port pmbus_control -pg 1 -y 660 -defaultsOSRD
+preplace port pcs_pma_0_tx_resetdone -pg 1 -y 1740 -defaultsOSRD
+preplace port s_axis_pause -pg 1 -y 1470 -defaultsOSRD
+preplace port clk50 -pg 1 -y 690 -defaultsOSRD
+preplace port core_clk156_out -pg 1 -y 1680 -defaultsOSRD
+preplace port axi_str_c2s1_areset_n -pg 1 -y 1050 -defaultsOSRD
+preplace port rx_interface_1_reset -pg 1 -y 2540 -defaultsOSRD
+preplace portBus pci_exp_rxn -pg 1 -y 470 -defaultsOSRD
+preplace portBus xphy1_status -pg 1 -y 1960 -defaultsOSRD
+preplace portBus xphy0_prtad -pg 1 -y 2160 -defaultsOSRD
+preplace portBus pci_exp_rxp -pg 1 -y 650 -defaultsOSRD
+preplace portBus tx_ifg_delay -pg 1 -y 1400 -defaultsOSRD
+preplace portBus clk_period_in_ns -pg 1 -y 860 -defaultsOSRD
+preplace portBus user_reset_out -pg 1 -y 1340 -defaultsOSRD
+preplace portBus pci_exp_txn -pg 1 -y 1300 -defaultsOSRD
+preplace portBus pma_pmd_type -pg 1 -y 2140 -defaultsOSRD
+preplace portBus pci_exp_txp -pg 1 -y 1100 -defaultsOSRD
+preplace portBus tx_ifg_delay_1 -pg 1 -y 1420 -defaultsOSRD
+preplace portBus xphy1_prtad -pg 1 -y 2310 -defaultsOSRD
+preplace portBus xphy0_status -pg 1 -y 1860 -defaultsOSRD
+preplace portBus cfg_lstatus -pg 1 -y 1070 -defaultsOSRD
+preplace inst reset_module -pg 1 -lvl 6 -y 1840 -defaultsOSRD -resize 534 440
+preplace inst nwl_backend_dma_x8g2_0 -pg 1 -lvl 2 -y 630 -defaultsOSRD
+preplace inst xlconstant_1 -pg 1 -lvl 1 -y 420 -defaultsOSRD
+preplace inst gen_chk -pg 1 -lvl 4 -y 1740 -defaultsOSRD -resize 462 414
+preplace inst PCIe_Path -pg 1 -lvl 4 -y 860 -defaultsOSRD
+preplace inst DDR_Memory -pg 1 -lvl 7 -y 370 -defaultsOSRD -resize 566 506
+preplace inst util_vector_logic_0 -pg 1 -lvl 1 -y 540 -defaultsOSRD
+preplace inst pcie_monitor_0 -pg 1 -lvl 2 -y 160 -defaultsOSRD
+preplace inst axi_shim_0 -pg 1 -lvl 3 -y 300 -defaultsOSRD
+preplace inst util_vector_logic_1 -pg 1 -lvl 1 -y 1140 -defaultsOSRD
+preplace inst axi_vfifo_adapter_0 -pg 1 -lvl 8 -y 1340 -defaultsOSRD
+preplace inst axis_dwidth_converter_0 -pg 1 -lvl 6 -y 780 -defaultsOSRD
+preplace inst axi_interconnect_0 -pg 1 -lvl 5 -y 250 -defaultsOSRD
+preplace inst Ethernet_Path -pg 1 -lvl 7 -y 1280 -defaultsOSRD -resize 559 932
+preplace netloc Ethernet_Path_m_axis1 1 6 2 3300 70 4380
+preplace netloc mig_7series_0_DDR3 1 7 2 4470 940 NJ
+preplace netloc axi_stream_gen_check_1_axi_stream_c2s 1 3 2 1520 1270 2190
+preplace netloc drp_1 1 0 4 NJ 920 NJ 920 NJ 600 1490
+preplace netloc DDR_Memory_M01_AXIS_RD_DATA_COUNT 1 7 1 4410
+preplace netloc pcie_monitor_0_init_fc 1 2 2 1210 610 NJ
+preplace netloc s_axis_pause_1_1 1 0 7 NJ 1500 NJ 1500 NJ 1500 NJ 1500 NJ 1500 NJ 1500 3290
+preplace netloc axi_shim_0_s_axi 1 3 2 1490 150 NJ
+preplace netloc perf_app_mux_0_s2c1_perf 1 3 2 1520 1290 2210
+preplace netloc pcie_7x_0_pcie2_cfg_status 1 1 4 440 900 NJ 430 NJ 430 2200
+preplace netloc s_axis_pause_1 1 0 7 NJ 1470 NJ 1470 NJ 1470 NJ 1470 NJ 1470 NJ 1470 3270
+preplace netloc axis_interconnect_1_M02_AXIS 1 6 2 3310 790 4430
+preplace netloc perf_app_mux_0_c2s1_axis 1 1 4 460 880 NJ 410 NJ 410 2220
+preplace netloc axis_interconnect_1_M03_AXIS 1 3 5 1490 380 NJ 410 NJ 410 NJ 90 4450
+preplace netloc DDR_Memory_M00_AXIS_RD_DATA_COUNT 1 7 1 4420
+preplace netloc perf_app_mux_0_c2s0_axis 1 1 4 450 870 NJ 400 NJ 400 2230
+preplace netloc pcie_7x_0_m_axis_rx 1 1 4 410 890 NJ 420 NJ 420 2210
+preplace netloc axi_interconnect_0_M02_AXI 1 5 2 2650 710 NJ
+preplace netloc axi_interconnect_0_M01_AXI 1 5 2 2660 700 NJ
+preplace netloc nwl_backend_dma_x8g2_0_s2c0 1 2 2 1170 690 NJ
+preplace netloc nwl_backend_dma_x8g2_0_cfg_control 1 2 2 1160 630 NJ
+preplace netloc nwl_backend_dma_x8g2_0_s2c1 1 2 2 1140 710 NJ
+preplace netloc axis_dwidth_converter_0_M_AXIS 1 6 1 3290
+preplace netloc nwl_backend_dma_x8g2_0_cfg_interrupt 1 2 2 1110 670 NJ
+preplace netloc PCIe_Path_s2c1_app 1 4 3 NJ 650 NJ 650 3280
+preplace netloc nwl_backend_dma_x8g2_0_s_axis_tx 1 1 3 430 860 1100 750 NJ
+preplace netloc pcie_7x_0_pcie_cfg_fc 1 1 4 420 910 NJ 440 NJ 440 2190
+preplace netloc axi_stream_gen_check_0_axi_stream_c2s 1 3 2 1510 1260 2200
+preplace netloc Ethernet_Path_m_axis 1 6 2 3310 80 4370
+preplace netloc perf_app_mux_0_s2c0_perf 1 3 2 1510 1280 2220
+preplace netloc axis_interconnect_1_M01_AXIS 1 3 5 1510 390 NJ 420 NJ 420 NJ 100 4460
+preplace netloc DDR_Memory_M03_AXIS_RD_DATA_COUNT 1 7 1 4390
+preplace netloc perf_app_mux_0_s2c0_app 1 4 2 NJ 760 N
+preplace netloc DDR_Memory_M02_AXIS_RD_DATA_COUNT 1 7 1 4400
+preplace netloc nwl_backend_dma_x8g2_0_cfg_err 1 2 2 1130 650 NJ
+preplace netloc axis_interconnect_1_M00_AXIS 1 6 2 3300 780 4440
+preplace netloc nwl_backend_dma_x8g2_0_t 1 2 1 1100
+preplace netloc axi_interconnect_0_M00_AXI 1 3 3 1500 450 NJ 660 2640
+preplace cgraphic comment_1 place abs 2853 1797 textcolor 4 linecolor 3 linewidth 2
+preplace cgraphic comment_2 place abs 1859 811 textcolor 4 linecolor 3 linewidth 2
+preplace cgraphic comment_4 place abs 3978 295 textcolor 4 linecolor 3 linewidth 2
+preplace cgraphic comment_5 place abs 849 564 textcolor 4 linecolor 3 linewidth 2
+preplace cgraphic comment_6 place abs 3949 1155 textcolor 4 linecolor 3 linewidth 2
+preplace cgraphic comment_7 place abs 1810 1684 textcolor 4 linecolor 3 linewidth 2
+levelinfo -pg 1 210 320 930 1400 1930 2470 2970 4060 4680 4910
+",
+   linktoobj_comment_1: "/reset_module",
+   linktoobj_comment_3: "/axis_interconnect_0",
+   linktoobj_comment_4: "/DDR_Memory",
+   linktoobj_comment_5: "/nwl_backend_dma_x8g2_0",
+   linktoobj_comment_6: "/Ethernet_Path",
+   linktoobj_comment_7: "/gen_chk",
+   linktotype_comment_1: "bd_cell",
+   linktotype_comment_3: "bd_cell",
+   linktotype_comment_4: "bd_cell",
+   linktotype_comment_5: "bd_cell",
+   linktotype_comment_6: "bd_cell",
+   linktotype_comment_7: "bd_cell",
+}
+0

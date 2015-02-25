@@ -1,0 +1,2 @@
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_k7.ko
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_base.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_bdring.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_user.o

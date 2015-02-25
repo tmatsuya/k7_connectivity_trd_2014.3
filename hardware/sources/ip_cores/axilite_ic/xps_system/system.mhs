@@ -1,0 +1,246 @@
+
+ PARAMETER VERSION = 2.1.0
+
+
+ PORT axilite_interconnect_0_INTERCONNECT_ACLK_pin = axilite_interconnect_0_INTERCONNECT_ACLK, DIR = I, SIGIS = CLK, CLK_FREQ = 250000000
+ PORT axilite_interconnect_0_INTERCONNECT_ARESETN_pin = axilite_interconnect_0_INTERCONNECT_ARESETN, DIR = I, SIGIS = RST, RST_POLARITY = 0
+ PORT axi_ext_slave_conn_2_M_AXI_AWID_pin = axi_ext_slave_conn_2_M_AXI_AWID, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_AWADDR_pin = axi_ext_slave_conn_2_M_AXI_AWADDR, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_2_M_AXI_AWLEN_pin = axi_ext_slave_conn_2_M_AXI_AWLEN, DIR = O, VEC = [7:0]
+ PORT axi_ext_slave_conn_2_M_AXI_AWSIZE_pin = axi_ext_slave_conn_2_M_AXI_AWSIZE, DIR = O, VEC = [2:0]
+ PORT axi_ext_slave_conn_2_M_AXI_AWBURST_pin = axi_ext_slave_conn_2_M_AXI_AWBURST, DIR = O, VEC = [1:0]
+ PORT axi_ext_slave_conn_2_M_AXI_AWVALID_pin = axi_ext_slave_conn_2_M_AXI_AWVALID, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_AWREADY_pin = axi_ext_slave_conn_2_M_AXI_AWREADY, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_WDATA_pin = axi_ext_slave_conn_2_M_AXI_WDATA, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_2_M_AXI_WSTRB_pin = axi_ext_slave_conn_2_M_AXI_WSTRB, DIR = O, VEC = [3:0]
+ PORT axi_ext_slave_conn_2_M_AXI_WLAST_pin = axi_ext_slave_conn_2_M_AXI_WLAST, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_WVALID_pin = axi_ext_slave_conn_2_M_AXI_WVALID, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_WREADY_pin = axi_ext_slave_conn_2_M_AXI_WREADY, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_BID_pin = axi_ext_slave_conn_2_M_AXI_BID, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_BRESP_pin = axi_ext_slave_conn_2_M_AXI_BRESP, DIR = I, VEC = [1:0]
+ PORT axi_ext_slave_conn_2_M_AXI_BVALID_pin = axi_ext_slave_conn_2_M_AXI_BVALID, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_BREADY_pin = axi_ext_slave_conn_2_M_AXI_BREADY, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_ARID_pin = axi_ext_slave_conn_2_M_AXI_ARID, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_ARADDR_pin = axi_ext_slave_conn_2_M_AXI_ARADDR, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_2_M_AXI_ARLEN_pin = axi_ext_slave_conn_2_M_AXI_ARLEN, DIR = O, VEC = [7:0]
+ PORT axi_ext_slave_conn_2_M_AXI_ARSIZE_pin = axi_ext_slave_conn_2_M_AXI_ARSIZE, DIR = O, VEC = [2:0]
+ PORT axi_ext_slave_conn_2_M_AXI_ARBURST_pin = axi_ext_slave_conn_2_M_AXI_ARBURST, DIR = O, VEC = [1:0]
+ PORT axi_ext_slave_conn_2_M_AXI_ARVALID_pin = axi_ext_slave_conn_2_M_AXI_ARVALID, DIR = O
+ PORT axi_ext_slave_conn_2_M_AXI_ARREADY_pin = axi_ext_slave_conn_2_M_AXI_ARREADY, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_RID_pin = axi_ext_slave_conn_2_M_AXI_RID, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_RDATA_pin = axi_ext_slave_conn_2_M_AXI_RDATA, DIR = I, VEC = [31:0]
+ PORT axi_ext_slave_conn_2_M_AXI_RRESP_pin = axi_ext_slave_conn_2_M_AXI_RRESP, DIR = I, VEC = [1:0]
+ PORT axi_ext_slave_conn_2_M_AXI_RLAST_pin = axi_ext_slave_conn_2_M_AXI_RLAST, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_RVALID_pin = axi_ext_slave_conn_2_M_AXI_RVALID, DIR = I
+ PORT axi_ext_slave_conn_2_M_AXI_RREADY_pin = axi_ext_slave_conn_2_M_AXI_RREADY, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_AWID_pin = axi_ext_slave_conn_1_M_AXI_AWID, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_AWADDR_pin = axi_ext_slave_conn_1_M_AXI_AWADDR, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_1_M_AXI_AWLEN_pin = axi_ext_slave_conn_1_M_AXI_AWLEN, DIR = O, VEC = [7:0]
+ PORT axi_ext_slave_conn_1_M_AXI_AWSIZE_pin = axi_ext_slave_conn_1_M_AXI_AWSIZE, DIR = O, VEC = [2:0]
+ PORT axi_ext_slave_conn_1_M_AXI_AWBURST_pin = axi_ext_slave_conn_1_M_AXI_AWBURST, DIR = O, VEC = [1:0]
+ PORT axi_ext_slave_conn_1_M_AXI_AWVALID_pin = axi_ext_slave_conn_1_M_AXI_AWVALID, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_AWREADY_pin = axi_ext_slave_conn_1_M_AXI_AWREADY, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_WDATA_pin = axi_ext_slave_conn_1_M_AXI_WDATA, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_1_M_AXI_WSTRB_pin = axi_ext_slave_conn_1_M_AXI_WSTRB, DIR = O, VEC = [3:0]
+ PORT axi_ext_slave_conn_1_M_AXI_WLAST_pin = axi_ext_slave_conn_1_M_AXI_WLAST, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_WVALID_pin = axi_ext_slave_conn_1_M_AXI_WVALID, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_WREADY_pin = axi_ext_slave_conn_1_M_AXI_WREADY, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_BID_pin = axi_ext_slave_conn_1_M_AXI_BID, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_BRESP_pin = axi_ext_slave_conn_1_M_AXI_BRESP, DIR = I, VEC = [1:0]
+ PORT axi_ext_slave_conn_1_M_AXI_BVALID_pin = axi_ext_slave_conn_1_M_AXI_BVALID, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_BREADY_pin = axi_ext_slave_conn_1_M_AXI_BREADY, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_ARID_pin = axi_ext_slave_conn_1_M_AXI_ARID, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_ARADDR_pin = axi_ext_slave_conn_1_M_AXI_ARADDR, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_1_M_AXI_ARLEN_pin = axi_ext_slave_conn_1_M_AXI_ARLEN, DIR = O, VEC = [7:0]
+ PORT axi_ext_slave_conn_1_M_AXI_ARSIZE_pin = axi_ext_slave_conn_1_M_AXI_ARSIZE, DIR = O, VEC = [2:0]
+ PORT axi_ext_slave_conn_1_M_AXI_ARBURST_pin = axi_ext_slave_conn_1_M_AXI_ARBURST, DIR = O, VEC = [1:0]
+ PORT axi_ext_slave_conn_1_M_AXI_ARVALID_pin = axi_ext_slave_conn_1_M_AXI_ARVALID, DIR = O
+ PORT axi_ext_slave_conn_1_M_AXI_ARREADY_pin = axi_ext_slave_conn_1_M_AXI_ARREADY, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_RID_pin = axi_ext_slave_conn_1_M_AXI_RID, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_RDATA_pin = axi_ext_slave_conn_1_M_AXI_RDATA, DIR = I, VEC = [31:0]
+ PORT axi_ext_slave_conn_1_M_AXI_RRESP_pin = axi_ext_slave_conn_1_M_AXI_RRESP, DIR = I, VEC = [1:0]
+ PORT axi_ext_slave_conn_1_M_AXI_RLAST_pin = axi_ext_slave_conn_1_M_AXI_RLAST, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_RVALID_pin = axi_ext_slave_conn_1_M_AXI_RVALID, DIR = I
+ PORT axi_ext_slave_conn_1_M_AXI_RREADY_pin = axi_ext_slave_conn_1_M_AXI_RREADY, DIR = O
+ PORT axi_ext_slave_conn_0_M_AXI_AWADDR_pin = axi_ext_slave_conn_0_M_AXI_AWADDR, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_0_M_AXI_AWVALID_pin = axi_ext_slave_conn_0_M_AXI_AWVALID, DIR = O
+ PORT axi_ext_slave_conn_0_M_AXI_AWREADY_pin = axi_ext_slave_conn_0_M_AXI_AWREADY, DIR = I
+ PORT axi_ext_slave_conn_0_M_AXI_WDATA_pin = axi_ext_slave_conn_0_M_AXI_WDATA, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_0_M_AXI_WSTRB_pin = axi_ext_slave_conn_0_M_AXI_WSTRB, DIR = O, VEC = [3:0]
+ PORT axi_ext_slave_conn_0_M_AXI_WVALID_pin = axi_ext_slave_conn_0_M_AXI_WVALID, DIR = O
+ PORT axi_ext_slave_conn_0_M_AXI_WREADY_pin = axi_ext_slave_conn_0_M_AXI_WREADY, DIR = I
+ PORT axi_ext_slave_conn_0_M_AXI_BRESP_pin = axi_ext_slave_conn_0_M_AXI_BRESP, DIR = I, VEC = [1:0]
+ PORT axi_ext_slave_conn_0_M_AXI_BVALID_pin = axi_ext_slave_conn_0_M_AXI_BVALID, DIR = I
+ PORT axi_ext_slave_conn_0_M_AXI_BREADY_pin = axi_ext_slave_conn_0_M_AXI_BREADY, DIR = O
+ PORT axi_ext_slave_conn_0_M_AXI_ARADDR_pin = axi_ext_slave_conn_0_M_AXI_ARADDR, DIR = O, VEC = [31:0]
+ PORT axi_ext_slave_conn_0_M_AXI_ARVALID_pin = axi_ext_slave_conn_0_M_AXI_ARVALID, DIR = O
+ PORT axi_ext_slave_conn_0_M_AXI_ARREADY_pin = axi_ext_slave_conn_0_M_AXI_ARREADY, DIR = I
+ PORT axi_ext_slave_conn_0_M_AXI_RDATA_pin = axi_ext_slave_conn_0_M_AXI_RDATA, DIR = I, VEC = [31:0]
+ PORT axi_ext_slave_conn_0_M_AXI_RRESP_pin = axi_ext_slave_conn_0_M_AXI_RRESP, DIR = I, VEC = [1:0]
+ PORT axi_ext_slave_conn_0_M_AXI_RVALID_pin = axi_ext_slave_conn_0_M_AXI_RVALID, DIR = I
+ PORT axi_ext_slave_conn_0_M_AXI_RREADY_pin = axi_ext_slave_conn_0_M_AXI_RREADY, DIR = O
+ PORT axi_ext_master_conn_0_S_AXI_AWADDR_pin = axi_ext_master_conn_0_S_AXI_AWADDR, DIR = I, VEC = [31:0]
+ PORT axi_ext_master_conn_0_S_AXI_AWPROT_pin = axi_ext_master_conn_0_S_AXI_AWPROT, DIR = I, VEC = [2:0]
+ PORT axi_ext_master_conn_0_S_AXI_AWVALID_pin = axi_ext_master_conn_0_S_AXI_AWVALID, DIR = I
+ PORT axi_ext_master_conn_0_S_AXI_AWREADY_pin = axi_ext_master_conn_0_S_AXI_AWREADY, DIR = O
+ PORT axi_ext_master_conn_0_S_AXI_WDATA_pin = axi_ext_master_conn_0_S_AXI_WDATA, DIR = I, VEC = [31:0]
+ PORT axi_ext_master_conn_0_S_AXI_WSTRB_pin = axi_ext_master_conn_0_S_AXI_WSTRB, DIR = I, VEC = [3:0]
+ PORT axi_ext_master_conn_0_S_AXI_WVALID_pin = axi_ext_master_conn_0_S_AXI_WVALID, DIR = I
+ PORT axi_ext_master_conn_0_S_AXI_WREADY_pin = axi_ext_master_conn_0_S_AXI_WREADY, DIR = O
+ PORT axi_ext_master_conn_0_S_AXI_BRESP_pin = axi_ext_master_conn_0_S_AXI_BRESP, DIR = O, VEC = [1:0]
+ PORT axi_ext_master_conn_0_S_AXI_BVALID_pin = axi_ext_master_conn_0_S_AXI_BVALID, DIR = O
+ PORT axi_ext_master_conn_0_S_AXI_BREADY_pin = axi_ext_master_conn_0_S_AXI_BREADY, DIR = I
+ PORT axi_ext_master_conn_0_S_AXI_ARADDR_pin = axi_ext_master_conn_0_S_AXI_ARADDR, DIR = I, VEC = [31:0]
+ PORT axi_ext_master_conn_0_S_AXI_ARPROT_pin = axi_ext_master_conn_0_S_AXI_ARPROT, DIR = I, VEC = [2:0]
+ PORT axi_ext_master_conn_0_S_AXI_ARVALID_pin = axi_ext_master_conn_0_S_AXI_ARVALID, DIR = I
+ PORT axi_ext_master_conn_0_S_AXI_ARREADY_pin = axi_ext_master_conn_0_S_AXI_ARREADY, DIR = O
+ PORT axi_ext_master_conn_0_S_AXI_RDATA_pin = axi_ext_master_conn_0_S_AXI_RDATA, DIR = O, VEC = [31:0]
+ PORT axi_ext_master_conn_0_S_AXI_RRESP_pin = axi_ext_master_conn_0_S_AXI_RRESP, DIR = O, VEC = [1:0]
+ PORT axi_ext_master_conn_0_S_AXI_RVALID_pin = axi_ext_master_conn_0_S_AXI_RVALID, DIR = O
+ PORT axi_ext_master_conn_0_S_AXI_RREADY_pin = axi_ext_master_conn_0_S_AXI_RREADY, DIR = I
+ PORT axi_ext_master_conn_0_ACLK_pin = axi_ext_master_conn_0_ACLK, DIR = I, SIGIS = CLK, CLK_FREQ = 250000000
+ PORT axi_ext_slave_conn_0_ACLK_pin = axi_ext_slave_conn_0_ACLK, DIR = I, SIGIS = CLK, CLK_FREQ = 250000000
+ PORT axi_ext_slave_conn_2_ACLK_pin = axi_ext_slave_conn_2_ACLK, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
+ PORT axi_ext_slave_conn_1_ACLK_pin = axi_ext_slave_conn_1_ACLK, DIR = I, SIGIS = CLK, CLK_FREQ = 156250000
+
+
+BEGIN axi_interconnect
+ PARAMETER INSTANCE = axilite_interconnect_0
+ PARAMETER HW_VER = 1.06.a
+ PARAMETER C_INTERCONNECT_CONNECTIVITY_MODE = 0
+ PORT INTERCONNECT_ACLK = axilite_interconnect_0_INTERCONNECT_ACLK
+ PORT INTERCONNECT_ARESETN = axilite_interconnect_0_INTERCONNECT_ARESETN
+END
+
+BEGIN axi_ext_master_conn
+ PARAMETER INSTANCE = axi_ext_master_conn_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_M_AXI_PROTOCOL = AXI4Lite
+ PARAMETER C_INTERCONNECT_M_AXI_IS_ACLK_ASYNC = 1
+ PARAMETER C_M_AXI_SUPPORTS_NARROW_BURST = 0
+ BUS_INTERFACE M_AXI = axilite_interconnect_0
+ PORT S_AXI_AWADDR = axi_ext_master_conn_0_S_AXI_AWADDR
+ PORT S_AXI_AWPROT = axi_ext_master_conn_0_S_AXI_AWPROT
+ PORT S_AXI_AWVALID = axi_ext_master_conn_0_S_AXI_AWVALID
+ PORT S_AXI_AWREADY = axi_ext_master_conn_0_S_AXI_AWREADY
+ PORT S_AXI_WDATA = axi_ext_master_conn_0_S_AXI_WDATA
+ PORT S_AXI_WSTRB = axi_ext_master_conn_0_S_AXI_WSTRB
+ PORT S_AXI_WVALID = axi_ext_master_conn_0_S_AXI_WVALID
+ PORT S_AXI_WREADY = axi_ext_master_conn_0_S_AXI_WREADY
+ PORT S_AXI_BRESP = axi_ext_master_conn_0_S_AXI_BRESP
+ PORT S_AXI_BVALID = axi_ext_master_conn_0_S_AXI_BVALID
+ PORT S_AXI_BREADY = axi_ext_master_conn_0_S_AXI_BREADY
+ PORT S_AXI_ARADDR = axi_ext_master_conn_0_S_AXI_ARADDR
+ PORT S_AXI_ARPROT = axi_ext_master_conn_0_S_AXI_ARPROT
+ PORT S_AXI_ARVALID = axi_ext_master_conn_0_S_AXI_ARVALID
+ PORT S_AXI_ARREADY = axi_ext_master_conn_0_S_AXI_ARREADY
+ PORT S_AXI_RDATA = axi_ext_master_conn_0_S_AXI_RDATA
+ PORT S_AXI_RRESP = axi_ext_master_conn_0_S_AXI_RRESP
+ PORT S_AXI_RVALID = axi_ext_master_conn_0_S_AXI_RVALID
+ PORT S_AXI_RREADY = axi_ext_master_conn_0_S_AXI_RREADY
+ PORT ACLK = axi_ext_master_conn_0_ACLK
+END
+
+BEGIN axi_ext_slave_conn
+ PARAMETER INSTANCE = axi_ext_slave_conn_0
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_S_AXI_RNG00_BASEADDR = 0x00009000
+ PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x00009FFF
+ PARAMETER C_INTERCONNECT_S_AXI_IS_ACLK_ASYNC = 1
+ BUS_INTERFACE S_AXI = axilite_interconnect_0
+ PORT M_AXI_AWADDR = axi_ext_slave_conn_0_M_AXI_AWADDR
+ PORT M_AXI_AWVALID = axi_ext_slave_conn_0_M_AXI_AWVALID
+ PORT M_AXI_AWREADY = axi_ext_slave_conn_0_M_AXI_AWREADY
+ PORT M_AXI_WDATA = axi_ext_slave_conn_0_M_AXI_WDATA
+ PORT M_AXI_WSTRB = axi_ext_slave_conn_0_M_AXI_WSTRB
+ PORT M_AXI_WVALID = axi_ext_slave_conn_0_M_AXI_WVALID
+ PORT M_AXI_WREADY = axi_ext_slave_conn_0_M_AXI_WREADY
+ PORT M_AXI_BRESP = axi_ext_slave_conn_0_M_AXI_BRESP
+ PORT M_AXI_BVALID = axi_ext_slave_conn_0_M_AXI_BVALID
+ PORT M_AXI_BREADY = axi_ext_slave_conn_0_M_AXI_BREADY
+ PORT M_AXI_ARADDR = axi_ext_slave_conn_0_M_AXI_ARADDR
+ PORT M_AXI_ARVALID = axi_ext_slave_conn_0_M_AXI_ARVALID
+ PORT M_AXI_ARREADY = axi_ext_slave_conn_0_M_AXI_ARREADY
+ PORT M_AXI_RDATA = axi_ext_slave_conn_0_M_AXI_RDATA
+ PORT M_AXI_RRESP = axi_ext_slave_conn_0_M_AXI_RRESP
+ PORT M_AXI_RVALID = axi_ext_slave_conn_0_M_AXI_RVALID
+ PORT M_AXI_RREADY = axi_ext_slave_conn_0_M_AXI_RREADY
+ PORT ACLK = axi_ext_slave_conn_0_ACLK
+END
+
+BEGIN axi_ext_slave_conn
+ PARAMETER INSTANCE = axi_ext_slave_conn_1
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_S_AXI_RNG00_BASEADDR = 0x0000B000
+ PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x0000BFFF
+ BUS_INTERFACE S_AXI = axilite_interconnect_0
+ PORT M_AXI_AWID = axi_ext_slave_conn_1_M_AXI_AWID
+ PORT M_AXI_AWADDR = axi_ext_slave_conn_1_M_AXI_AWADDR
+ PORT M_AXI_AWLEN = axi_ext_slave_conn_1_M_AXI_AWLEN
+ PORT M_AXI_AWSIZE = axi_ext_slave_conn_1_M_AXI_AWSIZE
+ PORT M_AXI_AWBURST = axi_ext_slave_conn_1_M_AXI_AWBURST
+ PORT M_AXI_AWVALID = axi_ext_slave_conn_1_M_AXI_AWVALID
+ PORT M_AXI_AWREADY = axi_ext_slave_conn_1_M_AXI_AWREADY
+ PORT M_AXI_WDATA = axi_ext_slave_conn_1_M_AXI_WDATA
+ PORT M_AXI_WSTRB = axi_ext_slave_conn_1_M_AXI_WSTRB
+ PORT M_AXI_WLAST = axi_ext_slave_conn_1_M_AXI_WLAST
+ PORT M_AXI_WVALID = axi_ext_slave_conn_1_M_AXI_WVALID
+ PORT M_AXI_WREADY = axi_ext_slave_conn_1_M_AXI_WREADY
+ PORT M_AXI_BID = axi_ext_slave_conn_1_M_AXI_BID
+ PORT M_AXI_BRESP = axi_ext_slave_conn_1_M_AXI_BRESP
+ PORT M_AXI_BVALID = axi_ext_slave_conn_1_M_AXI_BVALID
+ PORT M_AXI_BREADY = axi_ext_slave_conn_1_M_AXI_BREADY
+ PORT M_AXI_ARID = axi_ext_slave_conn_1_M_AXI_ARID
+ PORT M_AXI_ARADDR = axi_ext_slave_conn_1_M_AXI_ARADDR
+ PORT M_AXI_ARLEN = axi_ext_slave_conn_1_M_AXI_ARLEN
+ PORT M_AXI_ARSIZE = axi_ext_slave_conn_1_M_AXI_ARSIZE
+ PORT M_AXI_ARBURST = axi_ext_slave_conn_1_M_AXI_ARBURST
+ PORT M_AXI_ARVALID = axi_ext_slave_conn_1_M_AXI_ARVALID
+ PORT M_AXI_ARREADY = axi_ext_slave_conn_1_M_AXI_ARREADY
+ PORT M_AXI_RID = axi_ext_slave_conn_1_M_AXI_RID
+ PORT M_AXI_RDATA = axi_ext_slave_conn_1_M_AXI_RDATA
+ PORT M_AXI_RRESP = axi_ext_slave_conn_1_M_AXI_RRESP
+ PORT M_AXI_RLAST = axi_ext_slave_conn_1_M_AXI_RLAST
+ PORT M_AXI_RVALID = axi_ext_slave_conn_1_M_AXI_RVALID
+ PORT M_AXI_RREADY = axi_ext_slave_conn_1_M_AXI_RREADY
+ PORT ACLK = axi_ext_slave_conn_1_ACLK
+END
+
+BEGIN axi_ext_slave_conn
+ PARAMETER INSTANCE = axi_ext_slave_conn_2
+ PARAMETER HW_VER = 1.00.a
+ PARAMETER C_S_AXI_RNG00_BASEADDR = 0x0000C000
+ PARAMETER C_S_AXI_RNG00_HIGHADDR = 0x0000CFFF
+ BUS_INTERFACE S_AXI = axilite_interconnect_0
+ PORT M_AXI_AWID = axi_ext_slave_conn_2_M_AXI_AWID
+ PORT M_AXI_AWADDR = axi_ext_slave_conn_2_M_AXI_AWADDR
+ PORT M_AXI_AWLEN = axi_ext_slave_conn_2_M_AXI_AWLEN
+ PORT M_AXI_AWSIZE = axi_ext_slave_conn_2_M_AXI_AWSIZE
+ PORT M_AXI_AWBURST = axi_ext_slave_conn_2_M_AXI_AWBURST
+ PORT M_AXI_AWVALID = axi_ext_slave_conn_2_M_AXI_AWVALID
+ PORT M_AXI_AWREADY = axi_ext_slave_conn_2_M_AXI_AWREADY
+ PORT M_AXI_WDATA = axi_ext_slave_conn_2_M_AXI_WDATA
+ PORT M_AXI_WSTRB = axi_ext_slave_conn_2_M_AXI_WSTRB
+ PORT M_AXI_WLAST = axi_ext_slave_conn_2_M_AXI_WLAST
+ PORT M_AXI_WVALID = axi_ext_slave_conn_2_M_AXI_WVALID
+ PORT M_AXI_WREADY = axi_ext_slave_conn_2_M_AXI_WREADY
+ PORT M_AXI_BID = axi_ext_slave_conn_2_M_AXI_BID
+ PORT M_AXI_BRESP = axi_ext_slave_conn_2_M_AXI_BRESP
+ PORT M_AXI_BVALID = axi_ext_slave_conn_2_M_AXI_BVALID
+ PORT M_AXI_BREADY = axi_ext_slave_conn_2_M_AXI_BREADY
+ PORT M_AXI_ARID = axi_ext_slave_conn_2_M_AXI_ARID
+ PORT M_AXI_ARADDR = axi_ext_slave_conn_2_M_AXI_ARADDR
+ PORT M_AXI_ARLEN = axi_ext_slave_conn_2_M_AXI_ARLEN
+ PORT M_AXI_ARSIZE = axi_ext_slave_conn_2_M_AXI_ARSIZE
+ PORT M_AXI_ARBURST = axi_ext_slave_conn_2_M_AXI_ARBURST
+ PORT M_AXI_ARVALID = axi_ext_slave_conn_2_M_AXI_ARVALID
+ PORT M_AXI_ARREADY = axi_ext_slave_conn_2_M_AXI_ARREADY
+ PORT M_AXI_RID = axi_ext_slave_conn_2_M_AXI_RID
+ PORT M_AXI_RDATA = axi_ext_slave_conn_2_M_AXI_RDATA
+ PORT M_AXI_RRESP = axi_ext_slave_conn_2_M_AXI_RRESP
+ PORT M_AXI_RLAST = axi_ext_slave_conn_2_M_AXI_RLAST
+ PORT M_AXI_RVALID = axi_ext_slave_conn_2_M_AXI_RVALID
+ PORT M_AXI_RREADY = axi_ext_slave_conn_2_M_AXI_RREADY
+ PORT ACLK = axi_ext_slave_conn_2_ACLK
+END
+

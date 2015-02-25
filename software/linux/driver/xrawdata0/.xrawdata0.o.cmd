@@ -1,0 +1,1 @@
+cmd_/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xrawdata0/xrawdata0.o := ld -m elf_i386   -r -o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xrawdata0/xrawdata0.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xrawdata0/sguser.o 

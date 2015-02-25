@@ -1,0 +1,1 @@
+cmd_/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xrawdata1/built-in.o :=  rm -f /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xrawdata1/built-in.o; ar rcsD /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xrawdata1/built-in.o

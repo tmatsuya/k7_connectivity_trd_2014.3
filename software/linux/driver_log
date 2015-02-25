@@ -1,0 +1,83 @@
+Cleaning Ethernet Driver
+make[1]: Entering directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma'
+rm -rf *.o *.ko *.mod.* .c* .t* .xdma* 
+make[1]: Leaving directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma'
+make[1]: Entering directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0'
+rm -rf *.o *.ko *.mod.* .c* .t* .*.cmd 
+make[1]: Leaving directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0'
+make[1]: Entering directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1'
+rm -rf *.o *.ko *.mod.* .c* .t* .*.cmd 
+make[1]: Leaving directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1'
+***** Driver Cleaned *****
+Compiling Ethernet Driver
+make[1]: Entering directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma'
+make  -C /lib/modules/3.3.1-3.fc16.i686/build SUBDIRS=/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma 
+make[2]: Entering directory `/usr/src/kernels/3.3.1-3.fc16.i686'
+  LD      /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/built-in.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_base.o
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_base.c: In function ‘PktHandler’:
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_base.c:1087:6: warning: passing argument 1 of ‘PageReserved’ from incompatible pointer type [enabled by default]
+include/linux/page-flags.h:207:1: note: expected ‘const struct page *’ but argument is of type ‘unsigned char *’
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_base.c:1089:7: warning: passing argument 1 of ‘SetPageDirty’ from incompatible pointer type [enabled by default]
+include/linux/page-flags.h:199:1: note: expected ‘struct page *’ but argument is of type ‘unsigned char *’
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_bdring.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_user.o
+  LD [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_k7.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+  CC      /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_k7.mod.o
+  LD [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma/xdma_k7.ko
+make[2]: Leaving directory `/usr/src/kernels/3.3.1-3.fc16.i686'
+make[1]: Leaving directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xdma'
+make[1]: Entering directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0'
+make  -C /lib/modules/3.3.1-3.fc16.i686/build SUBDIRS=/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0 
+make[2]: Entering directory `/usr/src/kernels/3.3.1-3.fc16.i686'
+  LD      /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/built-in.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xbasic_types.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgethernet.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgethernet_control.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xgadapter.o
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xgadapter.c: In function ‘xenet_change_mtu’:
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xgadapter.c:833:13: warning: unused variable ‘SetMtu’ [-Wunused-variable]
+  LD [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+WARNING: "DmaMac_ReadReg" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko] undefined!
+WARNING: "DmaUnregister" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko] undefined!
+WARNING: "DmaSendPkt" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko] undefined!
+WARNING: "Dma_get_ringparam" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko] undefined!
+WARNING: "DmaMac_WriteReg" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko] undefined!
+WARNING: "DmaRegister" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko] undefined!
+  CC      /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.mod.o
+  LD [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0/xxgbeth0.ko
+make[2]: Leaving directory `/usr/src/kernels/3.3.1-3.fc16.i686'
+make[1]: Leaving directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth0'
+make[1]: Entering directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1'
+make  -C /lib/modules/3.3.1-3.fc16.i686/build SUBDIRS=/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1 
+make[2]: Entering directory `/usr/src/kernels/3.3.1-3.fc16.i686'
+  LD      /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/built-in.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xbasic_types.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgethernet.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgethernet_control.o
+  CC [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xgadapter.o
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xgadapter.c: In function ‘xenet_change_mtu’:
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xgadapter.c:833:13: warning: unused variable ‘SetMtu’ [-Wunused-variable]
+  LD [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.o
+  Building modules, stage 2.
+  MODPOST 1 modules
+WARNING: "DmaMac_ReadReg" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko] undefined!
+WARNING: "DmaUnregister" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko] undefined!
+WARNING: "DmaSendPkt" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko] undefined!
+WARNING: "Dma_get_ringparam" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko] undefined!
+WARNING: "DmaMac_WriteReg" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko] undefined!
+WARNING: "DmaRegister" [/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko] undefined!
+  CC      /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.mod.o
+  LD [M]  /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko
+make[2]: Leaving directory `/usr/src/kernels/3.3.1-3.fc16.i686'
+make[1]: Leaving directory `/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1'
+***** Driver Compiled *****
+Inserting Ethernet Driver
+***** Driver Loaded *****
+IP address 10.50.0.1 is translated to 10.60.0.1 and 10.50.1.1 to 10.60.1.1
+Try ping 10.60.0.1 and ping 10.60.1.1 to see ping packets going to hardware

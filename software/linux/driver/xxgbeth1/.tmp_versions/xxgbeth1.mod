@@ -1,0 +1,2 @@
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgbeth1.ko
+/home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xbasic_types.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgethernet.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xxgethernet_control.o /home/xhdadvs/Downloads/drivers/k7_driver/linux_driver_app/driver/xxgbeth1/xgadapter.o
